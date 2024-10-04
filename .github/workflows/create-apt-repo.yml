@@ -16,11 +16,10 @@ jobs:
       matrix:
         category:
           # TODO: replace refs with real ones once PR is approved
-          - name: stable
-            #ref: 1.3.3
-            ref: the_debbening
+          # - name: stable
+          #   ref: 1.3.3
           - name: nightly
-            #ref: master
+            # ref: master
             ref: the_debbening
         image:
           - name: ubuntu
