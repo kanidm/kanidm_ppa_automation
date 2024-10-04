@@ -71,7 +71,7 @@ jobs:
               "ubuntu" \
               "${{ matrix.target.debian-name }}"
       # Step 1. Crossbuild
-      - name: Build packages (cross bins)
+      - name: Build packages (cross bins & libs)
         shell: bash
         run: |
           platform/debian/kanidm_deb_packaging/scripts/crossbuild.sh \
@@ -86,7 +86,7 @@ jobs:
       - name: Upload debs
         uses: actions/upload-artifact@v4
         with:
-          name: "${{ matrix.image.name }}-${{ matrix.image.version }}$-{{ matrix.target.name }}"
+          name: "${{ matrix.image.name }}-${{ matrix.image.version }}-${{ matrix.target.name }}"
           path: |
             target/${{ matrix.target.name }}/debian/*.deb
 
