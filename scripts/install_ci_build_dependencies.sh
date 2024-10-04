@@ -34,7 +34,7 @@ fi
 # From here on normal Debian multiarch logic applies
 2>&1 echo "Enabling multiarch"
 dpkg --add-architecture $DEB_ARCH
-apt-get update
+apt-get update || cat /etc/apt/sources.list
 apt-get install -y \
     libssl3:$DEB_ARCH \
     libpam0g:$DEB_ARCH \
