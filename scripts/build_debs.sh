@@ -39,6 +39,11 @@ if [ "$(which cargo | wc -l)" -eq 0 ]; then
     fi
 fi
 
+if [ "$(which cargo-deb | wc -l)" -eq 0 ]; then
+	echo "Installing missing cargo-deb"
+	cargo install cargo-deb
+fi
+
 
 # Get the version. cargo-deb does have some version handling but it fails at a few key items such as the `-dev` suffix.
 # if we're in a github action, then it's easy to get the commit hash
@@ -60,7 +65,7 @@ echo "Updating changelog"
 mkdir -p target/debian
 sed -E \
     "s/#DATE#/$(date -R)/" \
-    platform/debian/packaging/templates/changelog  | \
+    platform/debian/kanidm_deb_packaging/templates/changelog  | \
     sed -E "s/#VERSION#/${PACKAGE_VERSION}/" | \
     sed -E "s/#GIT_COMMIT#/${GIT_COMMIT}/" | \
     sed -E "s/#PACKAGE#/${PACKAGE}/" > target/debian/changelog
