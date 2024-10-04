@@ -36,6 +36,7 @@ for target in "${targets[@]}"; do
 		--bin kanidm_unixd_tasks \
 		--bin kanidm_ssh_authorizedkeys \
 		--bin kanidm-unix \
+		--bin kanidm \
 		--release
 	cross build --target "$TRIPLET" \
 		-p pam_kanidm \

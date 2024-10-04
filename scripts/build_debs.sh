@@ -68,7 +68,7 @@ targets=("$@")
 for target in "${targets[@]}"; do
     echo "Packaging for: ${target}"
     # Build debs per target, per package
-    for package in kanidm_unix_int pam_kanidm nss_kanidm; do
+    for package in kanidm_unix_int pam_kanidm nss_kanidm kanidm_tools; do
         echo "Building deb for: ${package}"
         cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
     done
