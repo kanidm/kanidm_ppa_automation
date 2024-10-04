@@ -66,9 +66,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install deb build dependencies
         run: |
-            # Since we use ubuntu-latest as the workflow image, the build OS is always ubuntu regardless of the matrix
             sudo -E platform/debian/kanidm_deb_packaging/scripts/install_ci_build_dependencies.sh \
-              "ubuntu" \
               "${{ matrix.target.debian-name }}"
       # Step 1. Crossbuild
       - name: Build packages (cross bins & libs)
