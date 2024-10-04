@@ -25,8 +25,6 @@ echo "Packaging for: ${TRIPLET}"
 if [ -f "${HOME}/.cargo/env" ]; then
     # shellcheck disable=SC1091
     source "${HOME}/.cargo/env"
-else
-    echo "Couldn't find cargo env in ${HOME}/.cargo/env that seems weird?"
 fi
 
 # if we can't find cargo then need to update the path
@@ -47,6 +45,7 @@ fi
 if [ -n "${GITHUB_SHA}" ]; then
     GIT_HEAD="${GITHUB_SHA}"
 else
+    git config --global --add safe.directory "$PWD"
     GIT_HEAD="$(git rev-parse HEAD)"
 fi
 KANIDM_VERSION="$(grep -ioE 'version.*' Cargo.toml | head -n1 | awk '{print $NF}' | tr -d '"' | sed -e 's/-/~/')"
