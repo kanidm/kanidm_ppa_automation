@@ -54,11 +54,12 @@ jobs:
               sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ./
 
       - name: Install cross with UBI
         shell: bash
         run: |
-          "$HOME/bin/ubi" --project cross-rs/cross --in "$HOME/bin"
+          "./ubi" --project cross-rs/cross --in "$HOME/bin"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Step 1. Crossbuild
