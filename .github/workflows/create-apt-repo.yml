@@ -66,6 +66,9 @@ jobs:
       - name: Build packages (cross bins)
         shell: bash
         run: |
+          pwd
+          ls .
+          ls platform/debian/kanidm_deb_packaging/
           platform/debian/kanidm_deb_packaging/scripts/crossbuild.sh \
             "${{ matrix.image.name }}-${{ matrix.image.version }}-${{ matrix.target.name }}"
         env:
