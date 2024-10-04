@@ -58,13 +58,18 @@ jobs:
               sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install cross with UBI
         shell: bash
         run: |
           "ubi" --project cross-rs/cross --in "${HOME}/bin"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install deb build dependencies
+        run: |
+            # Since we use ubuntu-latest as the workflow image, the build OS is always ubuntu regardless of the matrix
+            sudo -E platform/debian/kanidm_deb_packaging/scripts/install_ci_build_dependencies.sh \
+              "ubuntu" \
+              "${{ matrix.target.debian-name }}"
       # Step 1. Crossbuild
       - name: Build packages (cross bins)
         shell: bash
@@ -73,14 +78,6 @@ jobs:
             "${{ matrix.image.name }}-${{ matrix.image.version }}-${{ matrix.target.name }}"
         env:
           VERBOSE: true
-      - name: Install deb build dependencies
-        run: |
-            # Since we use ubuntu-latest as the workflow image, the build OS is always ubuntu regardless of the matrix
-            sudo platform/debian/kanidm_deb_packaging/scripts/install_ci_build_dependencies.sh \
-              "ubuntu" \
-              "${{ matrix.target.debian-name }}"
-        env:
-          CI: true # Should not need to set this!
       # Step 2. deb build
       - name: Build packages (debs)
         run: |
