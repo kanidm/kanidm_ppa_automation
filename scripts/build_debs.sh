@@ -72,6 +72,9 @@ for target in "${targets[@]}"; do
         echo "Building deb for: ${workspace}"
         cargo deb "$VERBOSE" -p "$workspace" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
     done
-    echo "Done, packages:"
+    echo "Target ${target} done, packages:"
     find "target/${target}" -maxdepth 3 -name '*.deb'
 done
+
+echo "All targets ${target} done, packages:"
+find "target/" -name '*.deb'
