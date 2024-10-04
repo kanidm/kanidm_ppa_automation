@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# If you're a human, don't run this script on your daily machine.
-# This script is for GitHub Actions and makes a bunch of assumptions you dear human will struggle with.
-# This script is actively hostile against you human, you have been warned. :3
+# If you're a human, don't run this script on your daily machine, instead follow the instructions at: 
+# https://kanidm.github.io/kanidm/stable/packaging/debian_ubuntu_packaging.html
+# This script is actively hostile against you human if used outside those instructions, you have been warned. :3
 
 if [[ -z "$CI" ]]; then
     >&2 echo "Error, this script is only to be run from CI."
