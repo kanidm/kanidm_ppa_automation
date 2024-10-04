@@ -79,6 +79,8 @@ jobs:
             sudo platform/debian/kanidm_deb_packaging/scripts/install_ci_build_dependencies.sh \
               "ubuntu" \
               "${{ matrix.target.debian-name }}"
+        env:
+          CI: true # Should not need to set this!
       # Step 2. deb build
       - name: Build packages (debs)
         run: |
