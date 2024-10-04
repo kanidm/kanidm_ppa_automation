@@ -24,9 +24,12 @@ DEB_ARCH="${2?}" # Expecting "amd64" or "arm64" etc
 # Technically we don't need to do this with a native build, but it also doesn't hurt.
 if [[ "$DEB_OS" == "ubuntu" ]]; then
     2>&1 echo "Patching Ubuntu apt sources for multiarch"
-    # Default entries do not pin an arch, fix that
-    # GHA since 24.04 keeps them in a separate file
-    sed -E 's/^deb (http|mirror)/deb [arch=amd64] \1/' -i /etc/apt/sources.list /etc/apt/sources.list.d/ubuntu.sources
+    # Default entries in ubuntu 22.04 do not pin an arch, fix that
+    sed -E 's/^deb (http|mirror)/deb [arch=amd64] \1/' -i /etc/apt/sources.list
+    # GHA since ubuntu 24.04 keeps them in a separate file and a different format
+    if [[ -f  /etc/apt/sources.list.d/ubuntu.sources ]]; then
+	sed '/^URIs: .*/ s/$/\nArchitectures: amd64/' -i /etc/apt/sources.list.d/ubuntu.sources
+    fi
     # arm64 is on a completely different mirror structure, add that pinned to arm64
     echo 'deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy main restricted' > /etc/apt/sources.list.d/arm64.list
     echo 'deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ jammy-updates main restricted' >> /etc/apt/sources.list.d/arm64.list
