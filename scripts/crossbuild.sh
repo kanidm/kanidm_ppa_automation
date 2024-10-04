@@ -18,14 +18,14 @@ fi
 # Iterate over given targets.
 targets=("$@")
 for target in "${targets[@]}"; do
-	if [ ! -d "${BASEDIR}/crossbuild/$1" ]; then
-	    echo "Could not find target at: ${BASEDIR}/crossbuild/$1"
+	if [ ! -d "${BASEDIR}/crossbuild/${target}" ]; then
+	    echo "Could not find target at: ${BASEDIR}/crossbuild/${target}"
 	    exit 1
 	fi
 
 	# Find the target rust architecture
-	OS=$(echo $1 | cut -d \- -f 1-2)
-	TRIPLET=$(echo $1 | cut -d \- -f 3-)
+	OS=$(echo "$target" | cut -d \- -f 1-2)
+	TRIPLET=$(echo "$target" | cut -d \- -f 3-)
 	echo "Crossbuilding for: $TRIPLET"
 	rustup target add "$TRIPLET"
 

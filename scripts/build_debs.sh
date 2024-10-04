@@ -7,12 +7,7 @@
 
 set -e
 
-# The target triplet can be set as a param or env variable TRIPLET
-# Defaults to the native triplet
-if [ -z "${TRIPLET}" ]; then
-    NATIVE_TRIPLET="$(rustc --version --verbose | grep host | cut -d ' ' -f 2)"
-    TRIPLET="${1:-$NATIVE_TRIPLET}"
-fi
+# The target triplet(s) must be given as args.
 
 if [ -z "${VERBOSE}" ]; then
     VERBOSE=""
@@ -20,7 +15,6 @@ else
     VERBOSE="-v"
 fi
 
-echo "Packaging for: ${TRIPLET}"
 
 if [ -f "${HOME}/.cargo/env" ]; then
     # shellcheck disable=SC1091
@@ -70,11 +64,14 @@ sed -E \
     sed -E "s/#GIT_COMMIT#/${GIT_COMMIT}/" | \
     sed -E "s/#PACKAGE#/${PACKAGE}/" > target/debian/changelog
 
-# Build debs per workspace
-for workspace in kanidm_unix_int pam_kanidm nss_kanidm; do
-    echo "Building deb for: ${workspace}"
-    cargo deb "$VERBOSE" -p "$workspace" --no-build --target "$TRIPLET" --deb-version "$PACKAGE_VERSION"
+targets=("$@")
+for target in "${targets[@]}"; do
+    echo "Packaging for: ${target}"
+    # Build debs per target, per workspace
+    for workspace in kanidm_unix_int pam_kanidm nss_kanidm; do
+        echo "Building deb for: ${workspace}"
+        cargo deb "$VERBOSE" -p "$workspace" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
+    done
+    echo "Done, packages:"
+    find "target/${target}" -maxdepth 3 -name '*.deb'
 done
-
-echo "Done, packages:"
-find "target/${TRIPLET}" -maxdepth 3 -name '*.deb'
