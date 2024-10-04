@@ -17,7 +17,7 @@ jobs:
           - name: stable
             ref: v1.3.3
           - name: nightly
-            ref: HEAD
+            ref: master
         image:
           - name: ubuntu
             version: 22.04
