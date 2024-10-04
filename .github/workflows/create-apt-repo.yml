@@ -81,27 +81,29 @@ jobs:
           path: |
             target/${{ matrix.target.name }}/debian/*.deb
 
-  # create-adhoc-repo:
-  #   name: Create APT repo
-  #   strategy:
-  #     matrix:
-  #       repo:
-  #         - name: ubuntu
-  #           archs: amd64,arm64
-  #         - name: debian
-  #           archs: amd64,arm64
-  #     fail-fast: false
-  #   runs-on: ubuntu-24.04
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Create repo
-  #       uses: jinnatar/actions-aptly-repo@main
-  #       with:
-  #         repository: "${{ matrix.repo.name }}"
-  #         distribution: "${{ matrix.repo.name }}"
-  #         archs: "${{ matrix.repo.archs }}"
-  #         glob: "debs/${{ matrix.repo.name }}/"
-  #         component: dev
-  #         gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
-  #         passphrase: "${{ secrets.PASSPHRASE }}"
+  # Step 3. Create the APT repo from the debs
+  create-repo:
+    name: Create APT repo
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download previously built debs
+        uses: actions/download-artifact@v4
+        with:
+          path: debs
+          merge-multiple: true
+      - name: List packages
+        run: |
+          find $(pwd) -name '*.deb'
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create repo
+        uses: jinnatar/actions-aptly-repo@main
+        with:
+          repository: "${{ matrix.repo.name }}"
+          distribution: "${{ matrix.repo.name }}"
+          archs: "${{ matrix.repo.archs }}"
+          glob: "debs/${{ matrix.repo.name }}/"
+          component: dev
+          gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
+          passphrase: "${{ secrets.PASSPHRASE }}"
