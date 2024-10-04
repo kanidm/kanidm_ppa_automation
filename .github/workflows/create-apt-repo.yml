@@ -1,0 +1,34 @@
+---
+name: "Create apt repo"
+
+"on":
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  create-adhoc-repo:
+    name: Create adhoc repos
+    strategy:
+      matrix:
+        repo:
+          - name: ubuntu
+            archs: amd64,arm64
+          - name: debian
+            archs: amd64,arm64
+      fail-fast: false
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create repo
+        uses: jinnatar/actions-aptly-repo@main
+        with:
+          repository: "${{ matrix.repo.name }}"
+          distribution: "${{ matrix.repo.name }}"
+          archs: "${{ matrix.repo.archs }}"
+          glob: "debs/${{ matrix.repo.name }}/"
+          component: dev
+          gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
+          passphrase: "${{ secrets.PASSPHRASE }}"
