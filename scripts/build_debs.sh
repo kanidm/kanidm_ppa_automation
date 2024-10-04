@@ -67,14 +67,14 @@ sed -E \
 targets=("$@")
 for target in "${targets[@]}"; do
     echo "Packaging for: ${target}"
-    # Build debs per target, per workspace
-    for workspace in kanidm_unix_int pam_kanidm nss_kanidm; do
-        echo "Building deb for: ${workspace}"
-        cargo deb "$VERBOSE" -p "$workspace" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
+    # Build debs per target, per package
+    for package in kanidm_unix_int pam_kanidm nss_kanidm; do
+        echo "Building deb for: ${package}"
+        cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
     done
     echo "Target ${target} done, packages:"
     find "target/${target}" -maxdepth 3 -name '*.deb'
 done
 
-echo "All targets ${target} done, packages:"
+echo "All targets done, packages:"
 find "target/" -name '*.deb'
