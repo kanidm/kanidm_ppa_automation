@@ -12,6 +12,7 @@ jobs:
     name: Build debs
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         category:
           # TODO: replace refs with real ones once PR is approved
