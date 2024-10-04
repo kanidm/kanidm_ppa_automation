@@ -46,6 +46,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: platform/debian/kanidm_deb_packaging
+      - name: Amend PATH
+        run: |
+          mkdir "${HOME}/bin"
+          echo "${HOME}/bin" >> $GITHUB_PATH
       - name: Install UBI
         shell: bash
         run: |
@@ -54,12 +58,11 @@ jobs:
               sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARGET: ./
 
       - name: Install cross with UBI
         shell: bash
         run: |
-          "./ubi" --project cross-rs/cross --in "$HOME/bin"
+          "ubi" --project cross-rs/cross --in "${HOME}/bin"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # Step 1. Crossbuild
