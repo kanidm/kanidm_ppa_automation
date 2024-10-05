@@ -68,9 +68,14 @@ targets=("$@")
 for target in "${targets[@]}"; do
     echo "Packaging for: ${target}"
     # Build debs per target, per package
-    for package in kanidm_unix_int pam_kanidm nss_kanidm kanidm_tools; do
+    for package in kanidm_unix_int kanidm_tools; do
         echo "Building deb for: ${package}"
         cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
+    done
+    for package in pam_kanidm nss_kanidm; do
+        echo "Building deb for: ${package}"
+	# sdynlibs need to use a target specific variant to support multiarch paths
+        cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --variant "$target"
     done
     echo "Target ${target} done, packages:"
     find "target/${target}" -maxdepth 3 -name '*.deb'
