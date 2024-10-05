@@ -2,34 +2,46 @@
 
 set -e
 
-BASEDIR="$(dirname $0)/.."
+BASEDIR="$(readlink -f $(dirname $0)/..)"
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <target>"
     if [ -d "${BASEDIR}/crossbuild" ]; then
         echo "Valid targets:"
-        find "${BASEDIR}/crossbuild/" -maxdepth 1 -mindepth 1 -type d | awk -F'/' '{print $NF}' | sort
+        find "${BASEDIR}/crossbuild/images/" -maxdepth 1 -mindepth 1 -name "*.dockerfile" -exec basename {} .dockerfile \; | sort
     else
 	echo "Missing crossbuild configs, cannot proceed."
     fi
     exit 1
 fi
 
+if [ ! -f "Cargo.toml" ]; then
+    >&2 echo "Your current working directory doesn't look like we'll find the sources to build. This script must be run from from a checked out copy of the kanidm/kanidm project root."
+    exit 1
+fi
+
 # Iterate over given targets.
 targets=("$@")
 for target in "${targets[@]}"; do
-	if [ ! -d "${BASEDIR}/crossbuild/${target}" ]; then
-	    echo "Could not find target at: ${BASEDIR}/crossbuild/${target}"
+	# Find the target OS & rust architecture
+	OS=$(echo "$target" | cut -d \- -f 1-2)
+	TRIPLET=$(echo "$target" | cut -d \- -f 3-)
+	OS_TOML="${BASEDIR}/crossbuild/${OS}.toml"
+	DOCKERFILE="${BASEDIR}/crossbuild/images/${target}.dockerfile"
+
+	if [ ! -f "${OS_TOML}" ]; then
+	    echo "Could not find OS rules at: ${OS_TOML}"
+	    exit 1
+	fi
+	if [ ! -f "${BASEDIR}/crossbuild/images/${target}.dockerfile" ]; then
+	    echo "Could not find arch image at: ${DOCKERFILE}"
 	    exit 1
 	fi
 
-	# Find the target rust architecture
-	OS=$(echo "$target" | cut -d \- -f 1-2)
-	TRIPLET=$(echo "$target" | cut -d \- -f 3-)
-	echo "Crossbuilding for: $TRIPLET"
+	echo "Crossbuilding for: ${TRIPLET} on ${OS}"
 	rustup target add "$TRIPLET"
 
-	export CROSS_CONFIG="${BASEDIR}/crossbuild/${OS}.toml"
+	export CROSS_CONFIG="${OS_TOML}"
 
 	cross build --target "$TRIPLET" \
 		--bin kanidm_unixd \
