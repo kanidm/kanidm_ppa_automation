@@ -1,7 +1,7 @@
 # Ubuntu target cross config. Mostly the same as Debian but with extra multiarch hacks.
 
 [target.aarch64-unknown-linux-gnu]
-dockerfile = "platform/debian/kanidm_deb_packaging/crossbuild/ubuntu-22.04-aarch64-unknown-linux-gnu/Dockerfile"
+dockerfile = "platform/debian/kanidm_ppa_automation/crossbuild/ubuntu-22.04-aarch64-unknown-linux-gnu/Dockerfile"
 pre-build = [
     "TZ=UTC ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone",
 
@@ -17,7 +17,7 @@ pre-build = [
 ]
 
 [target.x86_64-unknown-linux-gnu]
-dockerfile = "platform/debian/kanidm_deb_packaging/crossbuild/ubuntu-22.04-x86_64-unknown-linux-gnu/Dockerfile"
+dockerfile = "platform/debian/kanidm_ppa_automation/crossbuild/ubuntu-22.04-x86_64-unknown-linux-gnu/Dockerfile"
 pre-build = [
     "TZ=UTC ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone",
 

@@ -45,7 +45,7 @@ jobs:
       - name: Checkout packaging tools
         uses: actions/checkout@v4
         with:
-          path: platform/debian/kanidm_deb_packaging
+          path: platform/debian/kanidm_ppa_automation
       - name: Amend PATH
         run: |
           mkdir "${HOME}/bin"
@@ -66,20 +66,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install deb build dependencies
         run: |
-            sudo -E platform/debian/kanidm_deb_packaging/scripts/install_ci_build_dependencies.sh \
+            sudo -E platform/debian/kanidm_ppa_automation/scripts/install_ci_build_dependencies.sh \
               "${{ matrix.target.debian-name }}"
       # Step 1. Crossbuild
       - name: Build packages (cross bins & libs)
         shell: bash
         run: |
-          platform/debian/kanidm_deb_packaging/scripts/crossbuild.sh \
+          platform/debian/kanidm_ppa_automation/scripts/crossbuild.sh \
             "${{ matrix.image.name }}-${{ matrix.image.version }}-${{ matrix.target.name }}"
         env:
           VERBOSE: true
       # Step 2. deb build
       - name: Build packages (debs)
         run: |
-          platform/debian/kanidm_deb_packaging/scripts/build_debs.sh "${{ matrix.target.name }}"
+          platform/debian/kanidm_ppa_automation/scripts/build_debs.sh "${{ matrix.target.name }}"
 
       - name: Upload debs
         uses: actions/upload-artifact@v4
