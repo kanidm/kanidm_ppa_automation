@@ -1,0 +1,118 @@
+---
+name: "Create apt repo"
+
+"on":  # TODO: This needs to also become a cron for the nightly function to make sense
+  push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Build debs
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        category:
+          # TODO: replace refs with real ones once PR is approved
+          - name: stable
+            # ref: v1.4.0
+            ref: stable_deb_testing
+          - name: nightly
+            # ref: master
+            ref: the_debbening
+        os:
+          - ubuntu-22.04  # Upstream LTS support ends 2027.
+          - ubuntu-24.04  # Upstream LTS support ends 2029.
+          - debian-12     # Upstream LTS support ends 2028.
+        target:
+          - name: x86_64-unknown-linux-gnu
+            debian-name: amd64
+          - name: aarch64-unknown-linux-gnu
+            debian-name: arm64
+        exclude:  # Nightlies are only for latest versions
+          - category: {name: nightly}
+            os: ubuntu-22.04
+    steps:
+      # Step 0. Pick up the stable or nightly source
+      - name: Checkout Kanidm
+        uses: actions/checkout@v4
+        with:
+          # TODO: replace repository with upstream once PR is approved
+          repository: "jinnatar/kanidm"
+          ref: "${{ matrix.category.ref }}"
+          submodules: false
+      # Overlay the latest packaging tools instead of using the submodule reference which is intended for human use.
+      - name: Checkout packaging tools
+        uses: actions/checkout@v4
+        with:
+          path: platform/debian/kanidm_ppa_automation
+      - name: Amend PATH
+        run: |
+          mkdir "${HOME}/bin"
+          echo "${HOME}/bin" >> $GITHUB_PATH
+      - name: Install UBI
+        shell: bash
+        run: |
+          curl --silent --location \
+              https://raw.githubusercontent.com/houseabsolute/ubi/master/bootstrap/bootstrap-ubi.sh |
+              sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cross with UBI
+        shell: bash
+        run: |
+          "ubi" --project cross-rs/cross --in "${HOME}/bin"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install deb build dependencies
+        run: |
+            sudo -E platform/debian/kanidm_ppa_automation/scripts/install_ci_build_dependencies.sh \
+              "${{ matrix.target.debian-name }}"
+      # Step 1. Crossbuild
+      - name: Build packages (cross bins & libs)
+        shell: bash
+        run: |
+          platform/debian/kanidm_ppa_automation/scripts/crossbuild.sh \
+            "${{ matrix.os }}-${{ matrix.target.name }}"
+        env:
+          VERBOSE: true
+      # Step 2. deb build
+      - name: Build packages (debs)
+        run: |
+          platform/debian/kanidm_ppa_automation/scripts/build_debs.sh "${{ matrix.target.name }}"
+
+      - name: Upload debs
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{matrix.category.name}}-${{ matrix.os }}-${{ matrix.target.name }}"
+          path: |
+            target/${{ matrix.target.name }}/debian/*.deb
+
+  # Step 3. Create the APT repo from the debs
+  create-repo:
+    name: Create APT repo
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download previously built debs
+        uses: actions/download-artifact@v4
+        with:
+          path: debs
+          merge-multiple: true
+      - name: List packages
+        run: |
+          find $(pwd) -name '*.deb'
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Create repo
+        uses: jinnatar/actions-aptly-repo@main
+        with:
+          repository: "${{ matrix.repo.name }}"
+          distribution: "${{ matrix.repo.name }}"
+          archs: "${{ matrix.repo.archs }}"
+          glob: "debs/${{ matrix.repo.name }}/"
+          component: dev
+          gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
+          passphrase: "${{ secrets.PASSPHRASE }}"
