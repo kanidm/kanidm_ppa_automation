@@ -52,6 +52,7 @@ jobs:
         run: |
           mkdir "${HOME}/bin"
           echo "${HOME}/bin" >> $GITHUB_PATH
+      # Step 0.5. Get a bunch of tools and dependencies
       - name: Install UBI
         shell: bash
         run: |
@@ -78,6 +79,13 @@ jobs:
             "${{ matrix.os }}-${{ matrix.target.name }}"
         env:
           VERBOSE: true
+      # Step 1.5. Strip binaries
+      - name: Strip stable binaries
+        if: matrix.category == 'stable'
+        shell: bash
+        run: |
+          find "target/${{ matrix.target.name }}/release" -maxdepth 1 -not -name "*.d" -name "kanidm*" \
+          | xargs llvm-strip --strip-all
       # Step 2. deb build
       - name: Build packages (debs)
         run: |
