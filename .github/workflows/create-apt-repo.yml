@@ -81,7 +81,7 @@ jobs:
           VERBOSE: true
       # Step 1.5. Strip binaries
       - name: Strip stable binaries
-        if: ${{ matrix.category.name }} == 'stable'
+        if: matrix.category.name == 'stable'
         shell: bash
         run: |
           find "target/${{ matrix.target.name }}/release" -maxdepth 1 -not -name "*.d" -name "kanidm*" \
