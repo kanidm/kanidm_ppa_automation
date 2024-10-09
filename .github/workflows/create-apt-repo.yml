@@ -113,13 +113,18 @@ jobs:
       - name: List packages
         run: |
           find $(pwd) -name '*.deb'
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Create repo
-        uses: jinnatar/actions-aptly-repo@main
+      - name: Create Aptly repo
+        uses: jinnatar/actions-aptly-repo@v1
         with:
+          name: kanidm
+          repos: |
+              noble,stable,\"amd64,arm64\",debs/stable-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              jammy,stable,\"amd64,arm64\",debs/stable-ubuntu-22.04-*-unknown-linux-gnu/*.deb
+              noble,nightly,\"amd64,arm64\",debs/nightly-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              bookworm,stable,\"amd64,arm64\",debs/stable-debian-12-*-unknown-linux-gnu/*.deb
+              bookworm,nightly,\"amd64,arm64\",debs/nightly-debian-12-*-unknown-linux-gnu/*.deb
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
-          passphrase: "${{ secrets.PASSPHRASE }}"
+          gpg_passphrase: "${{ secrets.PASSPHRASE }}"
 
   # Step 4. Publish the created repo if this meets the requirements for publishing
   # i.e. need to ignore pull-requests and perhaps even merges that don't have a specific tag.
