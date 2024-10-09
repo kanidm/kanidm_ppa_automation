@@ -3,6 +3,7 @@ name: "Create apt repo"
 
 "on":  # TODO: This needs to also become a cron for the nightly function to make sense
   push:
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -52,6 +53,7 @@ jobs:
         run: |
           mkdir "${HOME}/bin"
           echo "${HOME}/bin" >> $GITHUB_PATH
+      # Step 0.5. Get a bunch of tools and dependencies
       - name: Install UBI
         shell: bash
         run: |
@@ -78,6 +80,13 @@ jobs:
             "${{ matrix.os }}-${{ matrix.target.name }}"
         env:
           VERBOSE: true
+      # Step 1.5. Strip binaries
+      - name: Strip stable binaries
+        if: matrix.category.name == 'stable'
+        shell: bash
+        run: |
+          find "target/${{ matrix.target.name }}/release" -maxdepth 1 -not -name "*.d" -name "kanidm*" \
+          | xargs llvm-strip --strip-all
       # Step 2. deb build
       - name: Build packages (debs)
         run: |
@@ -109,10 +118,9 @@ jobs:
       - name: Create repo
         uses: jinnatar/actions-aptly-repo@main
         with:
-          repository: "${{ matrix.repo.name }}"
-          distribution: "${{ matrix.repo.name }}"
-          archs: "${{ matrix.repo.archs }}"
-          glob: "debs/${{ matrix.repo.name }}/"
-          component: dev
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
           passphrase: "${{ secrets.PASSPHRASE }}"
+
+  # Step 4. Publish the created repo if this meets the requirements for publishing
+  # i.e. need to ignore pull-requests and perhaps even merges that don't have a specific tag.
+  # Point being to avoid pushing out churn all the way to downstream users unless we actually want them to update.

@@ -51,4 +51,5 @@ apt-get update || cat /etc/apt/sources.list.d/ubuntu.sources
 apt-get install -y \
     libssl3:$DEB_ARCH \
     libpam0g:$DEB_ARCH \
-    libudev1:$DEB_ARCH
+    libudev1:$DEB_ARCH \
+    llvm
