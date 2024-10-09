@@ -109,7 +109,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: debs
-          merge-multiple: true
+          merge-multiple: false  # Preserve which debs are from which matrix item
       - name: List packages
         run: |
           find $(pwd) -name '*.deb'
