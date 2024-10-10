@@ -115,15 +115,18 @@ jobs:
         run: |
           find $(pwd) -name '*.deb'
       - name: Create Aptly repo
-        uses: jinnatar/actions-aptly-repo@v1
+        uses: jinnatar/actions-aptly-repo@v1.1.0
         with:
           name: kanidm
+          artifact_name: kanidm_ppa_snapshot
           repos: |
               noble,stable,\"amd64,arm64\",debs/stable-ubuntu-24.04-*-unknown-linux-gnu/*.deb
               jammy,stable,\"amd64,arm64\",debs/stable-ubuntu-22.04-*-unknown-linux-gnu/*.deb
               noble,nightly,\"amd64,arm64\",debs/nightly-ubuntu-24.04-*-unknown-linux-gnu/*.deb
               bookworm,stable,\"amd64,arm64\",debs/stable-debian-12-*-unknown-linux-gnu/*.deb
               bookworm,nightly,\"amd64,arm64\",debs/nightly-debian-12-*-unknown-linux-gnu/*.deb
+          # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
+          # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
           gpg_passphrase: "${{ secrets.PASSPHRASE }}"
 
