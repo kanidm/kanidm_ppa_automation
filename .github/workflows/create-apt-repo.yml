@@ -81,8 +81,9 @@ jobs:
         env:
           VERBOSE: true
       # Step 1.5. Strip binaries
-      - name: Strip stable binaries
-        if: matrix.category.name == 'stable'
+      # This significantly helps with storage limits.
+      # ~12 MiB packages vs ~82MiB packages as of 2024.
+      - name: Strip binaries
         shell: bash
         run: |
           find "target/${{ matrix.target.name }}/release" -maxdepth 1 -not -name "*.d" -name "kanidm*" \
