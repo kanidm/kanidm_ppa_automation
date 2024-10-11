@@ -40,13 +40,10 @@ fi
 
 
 # Get the version. cargo-deb does have some version handling but it fails at a few key items such as the `-dev` suffix.
-# if we're in a github action, then it's easy to get the commit hash
-if [ -n "${GITHUB_SHA}" ]; then
-    GIT_HEAD="${GITHUB_SHA}"
-else
-    git config --global --add safe.directory "$PWD"
-    GIT_HEAD="$(git rev-parse HEAD)"
-fi
+# We can't trust $GITHUB_SHA here because that points to the automation repo hash, not the source hash of what we're building.
+git config --global --add safe.directory "$PWD"
+GIT_HEAD="$(git rev-parse HEAD)"
+
 KANIDM_VERSION="$(grep -ioE 'version.*' Cargo.toml | head -n1 | awk '{print $NF}' | tr -d '"' | sed -e 's/-/~/')"
 DATESTR="$(date +%Y%m%d%H%M)"
 GIT_COMMIT="${GIT_HEAD:0:7}"
