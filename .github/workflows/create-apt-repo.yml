@@ -81,8 +81,9 @@ jobs:
         env:
           VERBOSE: true
       # Step 1.5. Strip binaries
-      - name: Strip stable binaries
-        if: matrix.category.name == 'stable'
+      # This significantly helps with storage limits.
+      # ~12 MiB packages vs ~82MiB packages as of 2024.
+      - name: Strip binaries
         shell: bash
         run: |
           find "target/${{ matrix.target.name }}/release" -maxdepth 1 -not -name "*.d" -name "kanidm*" \
@@ -109,17 +110,25 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: debs
-          merge-multiple: true
+          merge-multiple: false  # Preserve which debs are from which matrix item
       - name: List packages
         run: |
           find $(pwd) -name '*.deb'
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Create repo
-        uses: jinnatar/actions-aptly-repo@main
+      - name: Create Aptly repo
+        uses: jinnatar/actions-aptly-repo@v1.1.0
         with:
+          name: kanidm
+          artifact_name: kanidm_ppa_snapshot
+          repos: |
+              noble,stable,\"amd64,arm64\",debs/stable-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              jammy,stable,\"amd64,arm64\",debs/stable-ubuntu-22.04-*-unknown-linux-gnu/*.deb
+              noble,nightly,\"amd64,arm64\",debs/nightly-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              bookworm,stable,\"amd64,arm64\",debs/stable-debian-12-*-unknown-linux-gnu/*.deb
+              bookworm,nightly,\"amd64,arm64\",debs/nightly-debian-12-*-unknown-linux-gnu/*.deb
+          # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
+          # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
-          passphrase: "${{ secrets.PASSPHRASE }}"
+          gpg_passphrase: "${{ secrets.PASSPHRASE }}"
 
   # Step 4. Publish the created repo if this meets the requirements for publishing
   # i.e. need to ignore pull-requests and perhaps even merges that don't have a specific tag.
