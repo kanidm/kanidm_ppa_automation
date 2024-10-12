@@ -133,3 +133,23 @@ jobs:
   # Step 4. Publish the created repo if this meets the requirements for publishing
   # i.e. need to ignore pull-requests and perhaps even merges that don't have a specific tag.
   # Point being to avoid pushing out churn all the way to downstream users unless we actually want them to update.
+  publish:
+    name: Deploy to GitHub Pages
+    needs: create-repo
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download repo snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: kanidm_ppa_snapshot
+          path: snapshot
+          merge-multiple: true  # Flatten artifact name out
+      - name: Publish to PPA
+        uses: crazy-max/ghaction-github-pages@v4
+        with:
+          repo: jinnatar/kanidm_ppa
+          target_branch: main
+          keep_history: false
+          build_dir: snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
