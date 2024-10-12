@@ -165,6 +165,5 @@ jobs:
           keep_history: false
           build_dir: snapshot
           allow_empty_commit: false
-          jekyll: false
         env:
           GH_PAT: ${{ secrets.DEPLOY_PAT }}
