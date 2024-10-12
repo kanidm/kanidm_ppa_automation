@@ -45,7 +45,10 @@ git config --global --add safe.directory "$PWD"
 GIT_HEAD="$(git rev-parse HEAD)"
 
 KANIDM_VERSION="$(grep -ioE 'version.*' Cargo.toml | head -n1 | awk '{print $NF}' | tr -d '"' | sed -e 's/-/~/')"
-DATESTR="$(date +%Y%m%d%H%M)"
+# We read the commit date of the reference rev, feed it to date, format a bit and print in UTC.
+# Ergo, the version date field is a unix time representation of when the commit was submitted.
+# Unlike commit hashes, this is a sort compatible ever increasing version, but still marginally human readable.
+DATESTR="$(date -ud @$(git show --no-patch --format=%ct HEAD) +%Y%m%d%H%M)"
 GIT_COMMIT="${GIT_HEAD:0:7}"
 DEBIAN_REV="${DATESTR}+${GIT_COMMIT}"
 PACKAGE_VERSION="${KANIDM_VERSION}-${DEBIAN_REV}"
