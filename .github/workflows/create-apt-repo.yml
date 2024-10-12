@@ -144,6 +144,13 @@ jobs:
           name: kanidm_ppa_snapshot
           path: snapshot
           merge-multiple: true  # Flatten artifact name out
+      - name: Import GPG key  # So we can sign the repository commit
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
       - name: Publish to PPA
         uses: crazy-max/ghaction-github-pages@v4
         with:
@@ -151,5 +158,7 @@ jobs:
           target_branch: main
           keep_history: false
           build_dir: snapshot
+          allow_empty_commit: false
+          jekyll: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.DEPLOY_PAT }}
