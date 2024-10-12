@@ -115,28 +115,31 @@ jobs:
         run: |
           find $(pwd) -name '*.deb'
       - name: Create Aptly repo
-        uses: jinnatar/actions-aptly-repo@v1.1.0
+        uses: jinnatar/actions-aptly-repo@v2.0.0
         with:
-          name: kanidm
+          name: kanidm_ppa
+          repo_url: https://kanidm.github.io/kanidm_ppa
           artifact_name: kanidm_ppa_snapshot
+          # TODO: Flip stable repo defs false -> true, _after_ we've done the first publish.
+          # This enables the "import & extend" model.
           repos: |
-              noble,stable,\"amd64,arm64\",debs/stable-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              jammy,stable,\"amd64,arm64\",debs/stable-ubuntu-22.04-*-unknown-linux-gnu/*.deb
-              noble,nightly,\"amd64,arm64\",debs/nightly-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              bookworm,stable,\"amd64,arm64\",debs/stable-debian-12-*-unknown-linux-gnu/*.deb
-              bookworm,nightly,\"amd64,arm64\",debs/nightly-debian-12-*-unknown-linux-gnu/*.deb
+              noble,stable,\"amd64,arm64\",false,debs/stable-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              jammy,stable,\"amd64,arm64\",false,debs/stable-ubuntu-22.04-*-unknown-linux-gnu/*.deb
+              noble,nightly,\"amd64,arm64\",false,debs/nightly-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              bookworm,stable,\"amd64,arm64\",false,debs/stable-debian-12-*-unknown-linux-gnu/*.deb
+              bookworm,nightly,\"amd64,arm64\",false,debs/nightly-debian-12-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
           gpg_passphrase: "${{ secrets.PASSPHRASE }}"
 
-  # Step 4. Publish the created repo if this meets the requirements for publishing
-  # i.e. need to ignore pull-requests and perhaps even merges that don't have a specific tag.
-  # Point being to avoid pushing out churn all the way to downstream users unless we actually want them to update.
+  # Step 4. Publish the created repo if and only if it's a push to main.
   publish:
     name: Deploy to GitHub Pages
     needs: create-repo
     runs-on: ubuntu-24.04
+    # TODO: Enable the conditional once PR testing is done
+    #if: github.ref == 'refs/heads/main'
     steps:
       - name: Download repo snapshot
         uses: actions/download-artifact@v4
@@ -144,6 +147,10 @@ jobs:
           name: kanidm_ppa_snapshot
           path: snapshot
           merge-multiple: true  # Flatten artifact name out
+      - name: Add README.md  # Pull in book chapter on PPA usage
+        shell: bash
+        run: |
+          curl https://raw.githubusercontent.com/kanidm/kanidm/refs/heads/master/book/src/packaging/ppa_packages.md > snapshot/README.md
       - name: Import GPG key  # So we can sign the repository commit
         uses: crazy-max/ghaction-import-gpg@v6
         with:
@@ -153,7 +160,7 @@ jobs:
       - name: Publish to PPA
         uses: crazy-max/ghaction-github-pages@v4
         with:
-          repo: jinnatar/kanidm_ppa
+          repo: jinnatar/kanidm_ppa  # TODO: Swap for real repo before merge
           target_branch: main
           keep_history: false
           build_dir: snapshot
