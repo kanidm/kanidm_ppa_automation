@@ -151,7 +151,7 @@ jobs:
           curl https://raw.githubusercontent.com/kanidm/kanidm/refs/heads/master/book/src/packaging/ppa_packages.md > snapshot/README.md
       - name: Import GPG key  # So we can sign the repository commit
         uses: crazy-max/ghaction-import-gpg@v6
-        if: inputs.gpg_private_key != ''  # Not present for PRs on purpose.
+        if: secrets.GPG_PRIVATE_KEY != ''  # Not present for PRs on purpose.
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
