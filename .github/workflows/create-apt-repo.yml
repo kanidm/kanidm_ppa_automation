@@ -138,8 +138,6 @@ jobs:
     name: Deploy to GitHub Pages
     needs: create-repo
     runs-on: ubuntu-24.04
-    # TODO: Enable the conditional once PR testing is done
-    #if: github.ref == 'refs/heads/main'
     steps:
       - name: Download repo snapshot
         uses: actions/download-artifact@v4
@@ -153,12 +151,14 @@ jobs:
           curl https://raw.githubusercontent.com/kanidm/kanidm/refs/heads/master/book/src/packaging/ppa_packages.md > snapshot/README.md
       - name: Import GPG key  # So we can sign the repository commit
         uses: crazy-max/ghaction-import-gpg@v6
+        if: inputs.gpg_private_key != ''  # Not present for PRs on purpose.
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
           git_commit_gpgsign: true
       - name: Publish to PPA
         uses: crazy-max/ghaction-github-pages@v4
+        if: github.ref == 'refs/heads/main'
         with:
           repo: jinnatar/kanidm_ppa  # TODO: Swap for real repo before merge
           target_branch: main
