@@ -123,6 +123,15 @@ jobs:
       - name: List packages
         run: |
           find $(pwd) -name '*.deb'
+      # This step isn't strictly necessary for push & schedule runs,
+      # but is required for imports to work when the main repo
+      # key material isn't available, say in a PR.
+      - name: Get import GPG key
+        id: get_import_key
+        run: |
+          echo 'gpg_public_key<<EOF' >> $GITHUB_OUTPUT
+          curl -s https://kanidm.github.io/kanidm_ppa/kanidm_ppa.asc >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
       - name: Create Aptly repo
         uses: jinnatar/actions-aptly-repo@v2.0.2
         with:
@@ -139,6 +148,7 @@ jobs:
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
           gpg_passphrase: "${{ secrets.PASSPHRASE }}"
+          import_gpg_key: "${{ steps.get_import_key.outputs.gpg_public_key }}"
 
   # Step 4. Publish the created repo if and only if it's a push to main.
   publish:
