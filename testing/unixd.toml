@@ -1,7 +1,0 @@
-pam_allowed_login_groups = ["posix_login"]
-default_shell = "/bin/bash"
-home_attr = "uuid"
-home_alias = "spn"
-use_etc_skel = false
-uid_attr_map = "name"
-gid_attr_map = "name"

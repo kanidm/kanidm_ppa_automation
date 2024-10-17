@@ -51,8 +51,9 @@ case "$arch" in
 		;;
 esac
 
-SSH_PORT="${SSH_PORT:-222}"
+SSH_PORT="${SSH_PORT:-2222}"
 TELNET_PORT="${TELNET_PORT:-4321}"
+MIRROR_PORT="${MIRROR_PORT:-31625}"
 
 
 >&2 echo "Booting $arch $MACHINE with $EFI from $img"
@@ -81,9 +82,9 @@ while true; do
 done
 
 >&2 echo "Up! Transferring assets."
-scp $SSH_OPTS -P "$SSH_PORT" -r $debglob test_payload.sh unixd.toml kanidm.toml root@localhost:
+scp $SSH_OPTS -P "$SSH_PORT" test_payload.sh kanidm_ppa.list snapshot/kanidm_ppa.asc root@localhost:
 >&2 echo "Launching test payload."
-ssh $SSH_OPTS -p "$SSH_PORT" root@localhost ./test_payload.sh
+ssh $SSH_OPTS -p "$SSH_PORT" root@localhost "./test_payload.sh $IDM_URI $IDM_GROUP $MIRROR_PORT"
 
 >&2 echo "Done, killing qemu"
 kill $(cat qemu.pid)
