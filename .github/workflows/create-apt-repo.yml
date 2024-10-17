@@ -4,6 +4,8 @@ name: "Create apt repo"
 "on":  # TODO: This needs to also become a cron for the nightly function to make sense
   push:
   pull_request:
+  schedule:
+    - cron: '45 6 * * *'  # UTC 6:45
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -36,9 +38,13 @@ jobs:
             debian-name: amd64
           - name: aarch64-unknown-linux-gnu
             debian-name: arm64
-        exclude:  # Nightlies are only for latest versions
+        exclude:
+          # Nightlies are only for latest versions
           - category: {name: nightly}
             os: ubuntu-22.04
+          # Don't rebuild stable every nightly schedule
+          # TODO: revert the event_name to 'schedule' once done with testing
+          - category: {name: "${{ github.event_name == 'pull_request' && 'stable' }}"}
     steps:
       # Step 0. Pick up the stable or nightly source
       - name: Checkout Kanidm
@@ -123,13 +129,11 @@ jobs:
           name: kanidm_ppa
           repo_url: https://kanidm.github.io/kanidm_ppa
           artifact_name: kanidm_ppa_snapshot
-          # TODO: Flip stable repo defs false -> true, _after_ we've done the first publish.
-          # This enables the "import & extend" model.
           repos: |
-              noble,stable,\"amd64,arm64\",false,debs/stable-*-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              jammy,stable,\"amd64,arm64\",false,debs/stable-*-ubuntu-22.04-*-unknown-linux-gnu/*.deb
+              noble,stable,\"amd64,arm64\",true,debs/stable-*-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              jammy,stable,\"amd64,arm64\",true,debs/stable-*-ubuntu-22.04-*-unknown-linux-gnu/*.deb
               noble,nightly,\"amd64,arm64\",false,debs/nightly-master-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              bookworm,stable,\"amd64,arm64\",false,debs/stable-*-debian-12-*-unknown-linux-gnu/*.deb
+              bookworm,stable,\"amd64,arm64\",true,debs/stable-*-debian-12-*-unknown-linux-gnu/*.deb
               bookworm,nightly,\"amd64,arm64\",false,debs/nightly-master-debian-12-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
