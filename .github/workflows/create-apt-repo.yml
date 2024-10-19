@@ -112,7 +112,7 @@ jobs:
         run: |
           find $(pwd) -name '*.deb'
       - name: Create Aptly repo
-        uses: jinnatar/actions-aptly-repo@v2.0.0
+        uses: jinnatar/actions-aptly-repo@v2.0.2
         with:
           name: kanidm_ppa
           repo_url: https://kanidm.github.io/kanidm_ppa
