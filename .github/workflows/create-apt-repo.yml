@@ -94,7 +94,7 @@ jobs:
       - name: Upload debs
         uses: actions/upload-artifact@v4
         with:
-          name: "${{matrix.category.name}}-${{ matrix.os }}-${{ matrix.target.name }}"
+          name: "${{matrix.category.name}}-${{matrix.category.ref}}-${{ matrix.os }}-${{ matrix.target.name }}"
           path: |
             target/${{ matrix.target.name }}/debian/*.deb
 
@@ -121,10 +121,10 @@ jobs:
           # TODO: Flip stable repo defs false -> true, _after_ we've done the first publish.
           # This enables the "import & extend" model.
           repos: |
-              noble,stable,\"amd64,arm64\",false,debs/stable-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              jammy,stable,\"amd64,arm64\",false,debs/stable-ubuntu-22.04-*-unknown-linux-gnu/*.deb
+              noble,stable,\"amd64,arm64\",false,debs/stable-*-ubuntu-24.04-*-unknown-linux-gnu/*.deb
+              jammy,stable,\"amd64,arm64\",false,debs/stable-*-ubuntu-22.04-*-unknown-linux-gnu/*.deb
               noble,nightly,\"amd64,arm64\",false,debs/nightly-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              bookworm,stable,\"amd64,arm64\",false,debs/stable-debian-12-*-unknown-linux-gnu/*.deb
+              bookworm,stable,\"amd64,arm64\",false,debs/stable-*-debian-12-*-unknown-linux-gnu/*.deb
               bookworm,nightly,\"amd64,arm64\",false,debs/nightly-debian-12-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
