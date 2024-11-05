@@ -18,7 +18,8 @@ jobs:
         category:
           - name: stable
             ref: 1.3.0  # Previous stable branch + backport
-            # ref: v1.4.0  # Future stables should probably use release tags
+          - name: stable
+            ref: v1.4.1
           - name: nightly
             ref: master
         os:
