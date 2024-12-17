@@ -16,8 +16,13 @@ jobs:
       fail-fast: false
       matrix:
         category:
+            # Previous stable branch + backport.
+            # NOTICE: This is on purpose pointing to the 1.3.0 _branch_ which contains 1.3.3.
+            # The v1.3.3 tag does _not_ include the necessary backport for cargo-deb to function.
+            # This anomaly can be removed once we drop support for 1.3.3.
           - name: stable
-            ref: v1.3.3  # Previous stable branch + backport
+            ref: 1.3.0
+            # While the repo is in "dirty hack" mode, we only publish the latest patch of every minor version.
           - name: stable
             ref: v1.4.4
           - name: nightly
