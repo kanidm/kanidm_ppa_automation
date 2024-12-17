@@ -17,9 +17,9 @@ jobs:
       matrix:
         category:
           - name: stable
-            ref: 1.3.0  # Previous stable branch + backport
+            ref: v1.3.3  # Previous stable branch + backport
           - name: stable
-            ref: v1.4.1
+            ref: v1.4.5
           - name: nightly
             ref: master
         os:
