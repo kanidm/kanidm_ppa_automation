@@ -7,6 +7,9 @@
 
 set -e
 
+# Manually pinned to known good version, see issue #17 for history
+CARGO_DEB_VERSION="2.9.4"
+
 # The target triplet(s) must be given as args.
 
 if [ -z "${VERBOSE}" ]; then
@@ -35,7 +38,7 @@ fi
 
 if [ "$(which cargo-deb | wc -l)" -eq 0 ]; then
 	echo "Installing missing cargo-deb"
-	cargo install cargo-deb
+	cargo install cargo-deb --version "$CARGO_DEB_VERSION"
 fi
 
 
