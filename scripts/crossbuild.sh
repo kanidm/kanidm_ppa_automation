@@ -42,6 +42,7 @@ for target in "${targets[@]}"; do
 	rustup target add "$TRIPLET"
 
 	export CROSS_CONFIG="${OS_TOML}"
+  export KANIDM_BUILD_PROFILE="release_linux"
 
 	cross build --target "$TRIPLET" \
 		--bin kanidm_unixd \
