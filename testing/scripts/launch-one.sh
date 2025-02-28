@@ -2,8 +2,6 @@
 
 arch="${1?}"
 img="${2?}"
-shift 2
-debglob="$@"
 
 >&2 echo "Generating ssh keys & seed.img"
 cloud-localds seed.img <(scripts/gen-user-data.sh)
@@ -54,7 +52,9 @@ esac
 SSH_PORT="${SSH_PORT:-2222}"
 TELNET_PORT="${TELNET_PORT:-4321}"
 MIRROR_PORT="${MIRROR_PORT:-31625}"
-
+KANIDM_VERSION="${KANIDM_VERSION:-'*'}"  # * default picks latest
+CATEGORY="${CATEGORY:-'stable'}"
+USE_LIVE="${USE_LIVE:-'false'}"
 
 >&2 echo "Booting $arch $MACHINE with $EFI from $img"
 
@@ -83,8 +83,8 @@ done
 
 >&2 echo "Up! Transferring assets."
 scp $SSH_OPTS -P "$SSH_PORT" test_payload.sh kanidm_ppa.list snapshot/kanidm_ppa.asc root@localhost:
->&2 echo "Launching test payload."
-ssh $SSH_OPTS -p "$SSH_PORT" root@localhost "./test_payload.sh $IDM_URI $IDM_GROUP $MIRROR_PORT"
+>&2 echo "Launching test payload..."
+ssh $SSH_OPTS -p "$SSH_PORT" root@localhost "./test_payload.sh $IDM_URI $IDM_GROUP $MIRROR_PORT $KANIDM_VERSION $CATEGORY $USE_LIVE"
 
 >&2 echo "Done, killing qemu"
 kill $(cat qemu.pid)
