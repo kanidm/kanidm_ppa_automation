@@ -10,7 +10,8 @@ set -e
 # Manually pinned to known good version, see issue #17 for history
 CARGO_DEB_VERSION="2.9.4"
 
-# The target triplet(s) must be given as args.
+# The target triplet must be given as an arg, for example: x86_64-unknown-linux-gnu
+target="${1?}"
 
 if [ -z "${VERBOSE}" ]; then
     VERBOSE=""
@@ -67,22 +68,16 @@ sed -E \
     sed -E "s/#GIT_COMMIT#/${GIT_COMMIT}/" | \
     sed -E "s/#PACKAGE#/${PACKAGE}/" > target/debian/changelog
 
-targets=("$@")
-for target in "${targets[@]}"; do
-    echo "Packaging for: ${target}"
-    # Build debs per target, per package
-    for package in kanidm_unix_int kanidm_tools; do
-        echo "Building deb for: ${package}"
-        cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
-    done
-    for package in pam_kanidm nss_kanidm; do
-        echo "Building deb for: ${package}"
-	# sdynlibs need to use a target specific variant to support multiarch paths
-        cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --variant "$target"
-    done
-    echo "Target ${target} done, packages:"
-    find "target/${target}" -maxdepth 3 -name '*.deb'
+echo "Packaging for: ${target}"
+# Build debs per target, per package
+for package in kanidm_unix_int kanidm_tools; do
+    echo "Building deb for: ${package}"
+    cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
 done
-
-echo "All targets done, packages:"
-find "target/" -name '*.deb'
+for package in pam_kanidm nss_kanidm; do
+    echo "Building deb for: ${package}"
+# sdynlibs need to use a target specific variant to support multiarch paths
+    cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --variant "$target"
+done
+echo "Target ${target} done, packages:"
+find "target/${target}" -maxdepth 3 -name '*.deb'

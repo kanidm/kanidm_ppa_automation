@@ -11,7 +11,6 @@ concurrency:
 jobs:
   build:
     name: Build debs
-    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -28,19 +27,36 @@ jobs:
           - name: nightly
             ref: master
         os:
-          - ubuntu-22.04  # Upstream LTS support ends 2027.
-          - ubuntu-24.04  # Upstream LTS support ends 2029.
-          - ubuntu-24.10  # Upstream support ends April 2029.
-          - debian-12     # Upstream LTS support ends 2028.
+          # Runner defaults to ubuntu-24.04
+          - name: ubuntu-22.04  # Upstream LTS support ends 2027.
+            image: ubuntu:22.04
+          - name: ubuntu-24.04  # Upstream LTS support ends 2029.
+            image: ubuntu:24.04
+          - name: ubuntu-24.10  # Upstream support ends April 2029.
+            image: ubuntu:24.10
+          - name: debian-12     # Upstream LTS support ends 2028.
+            image: debian:12
+
         target:
           - name: x86_64-unknown-linux-gnu
-            debian-name: amd64
+            runner-postfix: ""
           - name: aarch64-unknown-linux-gnu
-            debian-name: arm64
-        exclude:  # Nightlies are only for latest versions
+            runner-postfix: "-arm"
+        exclude:  # Nightlies are only for latest LTS versions
           - category: {name: nightly}
-            os: ubuntu-22.04
+            os: {name: ubuntu-22.04}
+          - category: {name: nightly}
+            os: {name: ubuntu-24.10}
+
+    runs-on: "ubuntu-24.04${{ matrix.target.runner-postfix }}"
+    container: "${{ matrix.os.image }}"
     steps:
+      # Needed because we're not running directly on the runner,
+      # and if we checkout before having git, it's done through the REST API and missing .git
+      - name: Get git
+        shell: bash
+        run:
+          apt update && apt install -y git
       # Step 0. Pick up the stable or nightly source
       - name: Checkout Kanidm
         uses: actions/checkout@v4
@@ -53,35 +69,21 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: platform/debian/kanidm_ppa_automation
-      - name: Amend PATH
+      # Step 0.5. Get a bunch of dependencies
+      - name: Install build dependencies
         run: |
-          mkdir "${HOME}/bin"
-          echo "${HOME}/bin" >> $GITHUB_PATH
-      # Step 0.5. Get a bunch of tools and dependencies
-      - name: Install UBI
+            platform/debian/kanidm_ppa_automation/scripts/install_ci_build_dependencies.sh
+      # We need to grab Rust manually since we're on vanilla images, not GHA runners
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+      # Step 1. Build
+      - name: Build packages (bins & libs)
         shell: bash
         run: |
-          curl --silent --location \
-              https://raw.githubusercontent.com/houseabsolute/ubi/master/bootstrap/bootstrap-ubi.sh |
-              sh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install cross with UBI
-        shell: bash
-        run: |
-          "ubi" --project cross-rs/cross --in "${HOME}/bin"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Install deb build dependencies
-        run: |
-            sudo -E platform/debian/kanidm_ppa_automation/scripts/install_ci_build_dependencies.sh \
-              "${{ matrix.target.debian-name }}"
-      # Step 1. Crossbuild
-      - name: Build packages (cross bins & libs)
-        shell: bash
-        run: |
-          platform/debian/kanidm_ppa_automation/scripts/crossbuild.sh \
-            "${{ matrix.os }}-${{ matrix.target.name }}"
+          platform/debian/kanidm_ppa_automation/scripts/build_native.sh \
+            "${{ matrix.target.name }}"
         env:
           VERBOSE: true
       # Step 1.5. Strip binaries
@@ -100,7 +102,7 @@ jobs:
       - name: Upload debs
         uses: actions/upload-artifact@v4
         with:
-          name: "${{matrix.category.name}}-${{matrix.category.ref}}-${{ matrix.os }}-${{ matrix.target.name }}"
+          name: "${{matrix.category.name}}-${{matrix.category.ref}}-${{ matrix.os.name }}-${{ matrix.target.name }}"
           path: |
             target/${{ matrix.target.name }}/debian/*.deb
 
