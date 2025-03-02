@@ -3,6 +3,8 @@ name: "Create apt repo"
 
 "on":  # TODO: This needs to also become a cron for the nightly function to make sense
   push:
+    branches:
+      - main
   pull_request:
 
 concurrency:
@@ -78,6 +80,16 @@ jobs:
         uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: stable
+      - name: Setup mold
+        uses: rui314/setup-mold@v1
+      - name: Configure sccache
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.7
       # Step 1. Build
       - name: Build packages (bins & libs)
         shell: bash
@@ -86,6 +98,8 @@ jobs:
             "${{ matrix.target.name }}"
         env:
           VERBOSE: true
+          SCCACHE_GHA_ENABLED: "true"
+          RUSTC_WRAPPER: "sccache"
       # Step 1.5. Strip binaries
       # This significantly helps with storage limits.
       # ~12 MiB packages vs ~82MiB packages as of 2024.

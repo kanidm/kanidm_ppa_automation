@@ -18,6 +18,7 @@ echo "Building for: ${target} on ${PRETTY_NAME}"
 rustup target add "$target"
 
 export KANIDM_BUILD_PROFILE="release_linux"
+export RUSTFLAGS="-Clinker=clang -Clink-arg=-fuse-ld=/usr/local/bin/mold"
 
 cargo build --target "$target" \
   --bin kanidm_unixd \
