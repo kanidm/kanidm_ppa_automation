@@ -8,7 +8,7 @@
 set -e
 
 # Manually pinned to known good version, see issue #17 for history
-CARGO_DEB_VERSION="2.9.4"
+CARGO_DEB_VERSION="2.11.2"
 
 # The target triplet must be given as an arg, for example: x86_64-unknown-linux-gnu
 target="${1?}"
@@ -17,6 +17,13 @@ if [ -z "${VERBOSE}" ]; then
     VERBOSE=""
 else
     VERBOSE="-v"
+fi
+
+if [ -z "${VARIANT}" ]; then
+    VARIANT=""
+else
+    VARIANT="--variant=$target"
+    echo "Enabling cargo-deb variant build: $VARIANT"
 fi
 
 
@@ -69,15 +76,15 @@ sed -E \
     sed -E "s/#PACKAGE#/${PACKAGE}/" > target/debian/changelog
 
 echo "Packaging for: ${target}"
-# Build debs per target, per package
-for package in kanidm_unix_int kanidm_tools; do
-    echo "Building deb for: ${package}"
-    cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
+# Build debs per rust package
+for rust_package in kanidm_unix_int kanidm_tools; do
+    echo "Building deb for: ${rust_package}"
+    cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
 done
-for package in pam_kanidm nss_kanidm; do
-    echo "Building deb for: ${package}"
+for rust_package in pam_kanidm nss_kanidm; do
+    echo "Building deb for: ${rust_package}"
 # sdynlibs need to use a target specific variant to support multiarch paths
-    cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --variant "$target"
+    cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --multiarch=foreign "$VARIANT"
 done
 echo "Target ${target} done, packages:"
 find "target/${target}" -maxdepth 3 -name '*.deb'

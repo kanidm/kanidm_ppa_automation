@@ -23,9 +23,11 @@ jobs:
             # This anomaly can be removed once we drop support for 1.3.3.
           - name: stable
             ref: 1.3.0
+            variant: true  # Enables old variant based cargo-deb, being phased out
             # While the repo is in "dirty hack" mode, we only publish the latest patch of every minor version.
           - name: stable
             ref: v1.4.6
+            variant: true
           - name: nightly
             ref: master
         os:
@@ -110,6 +112,8 @@ jobs:
           | xargs llvm-strip --strip-all
       # Step 2. deb build
       - name: Build packages (debs)
+        env:
+          VARIANT: "${{ matrix.category.variant }}"
         run: |
           platform/debian/kanidm_ppa_automation/scripts/build_debs.sh "${{ matrix.target.name }}"
 
