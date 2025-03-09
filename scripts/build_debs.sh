@@ -11,7 +11,16 @@ set -e
 CARGO_DEB_VERSION="2.11.2"
 
 # The target triplet must be given as an arg, for example: x86_64-unknown-linux-gnu
-target="${1?}"
+if [ -z "$1" ]; then
+    >&2 echo "Missing target triplet as argument, for example: ${0} x86_64-unknown-linux-gnu"
+    exit 1
+fi
+target="$1"
+
+if [ ! -f "Cargo.toml" ]; then
+    >&2 echo -e "Your current working directory doesn't look like we'll find the necessary data. This script must be run from from a checked out copy of the kanidm/kanidm project root."
+    exit 1
+fi
 
 if [ -z "${VERBOSE}" ]; then
     VERBOSE=""

@@ -2,23 +2,26 @@
 
 set -e
 
-BASEDIR="$(readlink -f $(dirname $0)/..)"
+# The target triplet must be given as an arg, for example: x86_64-unknown-linux-gnu
+if [ -z "$1" ]; then
+    >&2 echo "Missing target triplet as argument, for example: ${0} x86_64-unknown-linux-gnu"
+    exit 1
+fi
+target="$1"
 
 if [ ! -f "Cargo.toml" ]; then
     >&2 echo "Your current working directory doesn't look like we'll find the sources to build. This script must be run from from a checked out copy of the kanidm/kanidm project root."
     exit 1
 fi
 
-# Expected target format: debian-12-aarch64-unknown-linux-gnu
-target=${1?}
+# In CI we set up a rust env already by this point, but doesn't hurt to make sure it's up to date.
+>&2 echo "Updating Rust toolchain..."
+rustup toolchain install stable
 
 . /etc/os-release
 
 echo "Building for: ${target} on ${PRETTY_NAME}"
-rustup target add "$target"
-
 export KANIDM_BUILD_PROFILE="release_linux"
-export RUSTFLAGS="-Clinker=clang -Clink-arg=-fuse-ld=/usr/local/bin/mold"
 
 cargo build --target "$target" \
   --bin kanidm_unixd \

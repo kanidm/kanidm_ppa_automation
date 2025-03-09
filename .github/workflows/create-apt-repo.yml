@@ -98,6 +98,7 @@ jobs:
           VERBOSE: true
           SCCACHE_GHA_ENABLED: "true"
           RUSTC_WRAPPER: "sccache"
+          RUSTFLAGS: "-Clinker=clang -Clink-arg=-fuse-ld=/usr/local/bin/mold"
       # Step 1.5. Strip binaries
       # This significantly helps with storage limits.
       # ~12 MiB packages vs ~82MiB packages as of 2024.
