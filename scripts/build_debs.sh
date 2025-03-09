@@ -8,14 +8,31 @@
 set -e
 
 # Manually pinned to known good version, see issue #17 for history
-CARGO_DEB_VERSION="2.9.4"
+CARGO_DEB_VERSION="2.11.2"
 
-# The target triplet(s) must be given as args.
+# The target triplet must be given as an arg, for example: x86_64-unknown-linux-gnu
+if [ -z "$1" ]; then
+    >&2 echo "Missing target triplet as argument, for example: ${0} x86_64-unknown-linux-gnu"
+    exit 1
+fi
+target="$1"
+
+if [ ! -f "Cargo.toml" ]; then
+    >&2 echo -e "Your current working directory doesn't look like we'll find the necessary data. This script must be run from from a checked out copy of the kanidm/kanidm project root."
+    exit 1
+fi
 
 if [ -z "${VERBOSE}" ]; then
     VERBOSE=""
 else
     VERBOSE="-v"
+fi
+
+if [ -z "${VARIANT}" ]; then
+    VARIANT=""
+else
+    VARIANT="--variant=$target"
+    echo "Enabling cargo-deb variant build: $VARIANT"
 fi
 
 
@@ -67,22 +84,16 @@ sed -E \
     sed -E "s/#GIT_COMMIT#/${GIT_COMMIT}/" | \
     sed -E "s/#PACKAGE#/${PACKAGE}/" > target/debian/changelog
 
-targets=("$@")
-for target in "${targets[@]}"; do
-    echo "Packaging for: ${target}"
-    # Build debs per target, per package
-    for package in kanidm_unix_int kanidm_tools; do
-        echo "Building deb for: ${package}"
-        cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
-    done
-    for package in pam_kanidm nss_kanidm; do
-        echo "Building deb for: ${package}"
-	# sdynlibs need to use a target specific variant to support multiarch paths
-        cargo deb "$VERBOSE" -p "${package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --variant "$target"
-    done
-    echo "Target ${target} done, packages:"
-    find "target/${target}" -maxdepth 3 -name '*.deb'
+echo "Packaging for: ${target}"
+# Build debs per rust package
+for rust_package in kanidm_unix_int kanidm_tools; do
+    echo "Building deb for: ${rust_package}"
+    cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
 done
-
-echo "All targets done, packages:"
-find "target/" -name '*.deb'
+for rust_package in pam_kanidm nss_kanidm; do
+    echo "Building deb for: ${rust_package}"
+# sdynlibs need to use a target specific variant to support multiarch paths
+    cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --multiarch=foreign "$VARIANT"
+done
+echo "Target ${target} done, packages:"
+find "target/${target}" -maxdepth 3 -name '*.deb'

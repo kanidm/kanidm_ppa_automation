@@ -7,4 +7,5 @@
 *.socket
 *.zip
 ssh_ed25519*
-snapshot/
+snapshot/*
+!*/.gitkeep
