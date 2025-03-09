@@ -88,7 +88,7 @@ echo "Packaging for: ${target}"
 # Build debs per rust package
 metadata_path=$(mktemp)
 cargo metadata --format-version 1 --filter-platform "$target" > "$metadata_path"
-for rust_package in kanidm_unix_int kanidm_tools; do
+for rust_package in daemon kanidm_unix_int kanidm_tools; do
     # Check that we have a config for the package
     manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
     if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
