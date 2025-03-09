@@ -36,6 +36,7 @@ cargo build --target "$target" \
   --bin kanidm_ssh_authorizedkeys \
   --bin kanidm-unix \
   --bin kanidm \
+  --bin kanidmd \
   --release
 cargo build --target "$target" \
   -p pam_kanidm \
