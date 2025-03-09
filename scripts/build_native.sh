@@ -20,8 +20,15 @@ rustup toolchain install stable
 
 . /etc/os-release
 
-echo "Building for: ${target} on ${PRETTY_NAME}"
-export KANIDM_BUILD_PROFILE="release_linux"
+# Where available, we use a dedicated Debian build profile
+if [[ -f libs/profiles/release_debian.toml ]]; then
+    export KANIDM_BUILD_PROFILE="release_debian"
+else
+    export KANIDM_BUILD_PROFILE="release_linux"
+fi
+
+
+echo "Building for: ${target}  with profile ${KANIDM_BUILD_PROFILE} on ${PRETTY_NAME}"
 
 cargo build --target "$target" \
   --bin kanidm_unixd \
