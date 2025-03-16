@@ -91,7 +91,7 @@ cargo metadata --format-version 1 --filter-platform "$target" > "$metadata_path"
 for rust_package in kanidm_unix_int kanidm_tools; do
     # Check that we have a config for the package
     manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
-    if grep 'package.metadata.deb' "$manifest_path" > /dev/null; then
+    if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
         echo "Building deb for: ${rust_package}"
         cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
     else
@@ -102,7 +102,7 @@ done
 for rust_package in pam_kanidm nss_kanidm; do
     # Check that we have a config for the package
     manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
-    if grep 'package.metadata.deb' "$manifest_path" > /dev/null; then
+    if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
         echo "Building deb for: ${rust_package}"
     # sdynlibs need to use a target specific variant to support multiarch paths
         cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --multiarch=foreign "$VARIANT"
