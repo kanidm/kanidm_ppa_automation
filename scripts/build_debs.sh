@@ -86,14 +86,31 @@ sed -E \
 
 echo "Packaging for: ${target}"
 # Build debs per rust package
-for rust_package in kanidm_unix_int kanidm_tools; do
-    echo "Building deb for: ${rust_package}"
-    cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
+metadata_path=$(mktemp)
+cargo metadata --format-version 1 --filter-platform "$target" > "$metadata_path"
+for rust_package in daemon kanidm_unix_int kanidm_tools; do
+    # Check that we have a config for the package
+    manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
+    if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
+        echo "Building deb for: ${rust_package}"
+        cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
+    else
+        echo "::warning title=No deb metadata found for ${rust_package}, not building it!:: This may be normal if building an older version."
+    fi
 done
+#TODO: Once variant builds are all gone, these two loops can be combined into one since --multiarch doesn't hurt non-dynlib builds.
 for rust_package in pam_kanidm nss_kanidm; do
-    echo "Building deb for: ${rust_package}"
-# sdynlibs need to use a target specific variant to support multiarch paths
-    cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --multiarch=foreign "$VARIANT"
+    # Check that we have a config for the package
+    manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
+    if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
+        echo "Building deb for: ${rust_package}"
+    # sdynlibs need to use a target specific variant to support multiarch paths
+        cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --multiarch=foreign "$VARIANT"
+    else
+        echo "::warning No deb metadata found for ${rust_package}, not building it! This may be normal if building an older version."
+    fi
 done
+rm "$metadata_path"
+
 echo "Target ${target} done, packages:"
 find "target/${target}" -maxdepth 3 -name '*.deb'

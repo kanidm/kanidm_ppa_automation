@@ -48,7 +48,7 @@ fi
 >&2 echo "Installing build dependencies from APT for ${PRETTY_NAME}"
 apt-get update || cat /etc/apt/sources.list.d/ubuntu.sources
 apt-get install -y \
-    curl wget \
+    curl wget jq \
     build-essential pkg-config llvm clang \
     libssl-dev libpam0g-dev libudev-dev \
     "$ssl" "$linker"
