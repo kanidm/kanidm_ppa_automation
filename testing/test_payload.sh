@@ -34,7 +34,7 @@ export LC_ALL=C.UTF-8
 mv kanidm_ppa.asc /etc/apt/trusted.gpg.d/
 if [[ "$USE_LIVE" == "true" ]]; then
   curl -s "http://10.0.2.2:${MIRROR_PORT}/kanidm_ppa.list" \
-    | grep $( ( . /etc/os-release && echo $VERSION_CODENAME) ) \
+    | grep "$( ( . /etc/os-release && echo "$VERSION_CODENAME") )" \
     | grep "$CATEGORY" \
     > /etc/apt/sources.list.d/kanidm_ppa.list
   log "Using LIVE PPA instead of local snapshot mirror:"

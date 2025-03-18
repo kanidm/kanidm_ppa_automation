@@ -4,7 +4,7 @@ set -eu
 
 MIRROR_PORT="${MIRROR_PORT:-31625}"
 
-zip=$(readlink -f ${1?})
+zip=$(readlink -f "${1?}")
 
 mkdir -p snapshot && cd snapshot
 unzip -qo "$zip"
