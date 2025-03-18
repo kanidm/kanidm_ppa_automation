@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# This script is completely cut off from any upstream env and needs explicit args
-IDM_URI="${1?}"
-IDM_GROUP="${2?}"
-MIRROR_PORT="${3?}"
-KANIDM_VERSION="${4?}"
-CATEGORY="${5?}"
-USE_LIVE="${6?}"
-
 set -eu
+
+# These should come over SSH and we can assume they have values by this point
+MIRROR_PORT="${MIRROR_PORT?}"
+KANIDM_VERSION="${KANIDM_VERSION?}"
+CATEGORY="${CATEGORY?}"
+USE_LIVE="${USE_LIVE?}"
+IDM_URI="${IDM_URI?}"
 
 # Use a bit of color so it's easier to spot payload log vs. target output
 RED="\e[31m"

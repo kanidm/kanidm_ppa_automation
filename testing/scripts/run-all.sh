@@ -2,12 +2,15 @@
 
 set -e
 
-# Configs specific to your environment
-export SSH_PORT="${SSH_PORT:-2222}" # Any free port will do
+# Configs defaults are defined here, but used much deeper in the call graph
+export SSH_PORT="${SSH_PORT:-2222}"
 export IDM_URI="${IDM_URI?}" # No reasonable default!
 export IDM_GROUP="${IDM_GROUP:-posix_login}"
 export TELNET_PORT="${TELNET_PORT:-4321}"
 export MIRROR_PORT="${MIRROR_PORT:-31625}"
+export CATEGORY="${CATEGORY:-stable}"
+export USE_LIVE="${USE_LIVE:-false}"
+export KANIDM_VERSION="${KANIDM_VERSION:-*}"  # * default picks latest
 
 function cleanup(){
   set +e

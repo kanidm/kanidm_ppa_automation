@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -eu
+# This script is not intended to be run standalone, as it expects
+# a boatload of files & env variables to be set. Run run-all.sh instead!
+
 arch="${1?}"
 img="${2?}"
 
@@ -56,12 +60,6 @@ case "$arch" in
 		;;
 esac
 
-SSH_PORT="${SSH_PORT:-2222}"
-TELNET_PORT="${TELNET_PORT:-4321}"
-MIRROR_PORT="${MIRROR_PORT:-31625}"
-KANIDM_VERSION="${KANIDM_VERSION:-'*'}"  # * default picks latest
-CATEGORY="${CATEGORY:-'stable'}"
-USE_LIVE="${USE_LIVE:-'false'}"
 
 >&2 echo "Booting $arch $MACHINE with $EFI from $img"
 set -x
@@ -82,18 +80,29 @@ set -x
 set +x
 
 SSH_OPTS=(-i ssh_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
+
+set +e  # ssh will be failing on purpose
 while true; do
 	echo "Waiting for VM.. try 'nc localhost 4321' to see what's going on."
 	output=$(ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" -o ConnectTimeout=1 root@localhost whoami)
 	[[ "$output" == "root" ]] && break
 	sleep 10s
 done
+set -e
 
 >&2 echo "Up! Transferring assets."
 scp "${SSH_OPTS[@]}" -P "$SSH_PORT" test_payload.sh kanidm_ppa.list snapshot/kanidm_ppa.asc root@localhost:
 >&2 echo "Launching test payload..."
-ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost "./test_payload.sh $IDM_URI $IDM_GROUP $MIRROR_PORT $KANIDM_VERSION $CATEGORY $USE_LIVE"
+ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
+	IDM_URI="$IDM_URI" \
+	IDM_GROUP="$IDM_GROUP" \
+	MIRROR_PORT="$MIRROR_PORT" \
+	KANIDM_VERSION="$KANIDM_VERSION" \
+	CATEGORY="$CATEGORY" \
+	USE_LIVE="$USE_LIVE" \
+	./test_payload.sh
 
 >&2 echo "Done, killing qemu"
+set +e  # allow for kill failure
 kill "$(cat qemu.pid)"
 rm qemu.pid
