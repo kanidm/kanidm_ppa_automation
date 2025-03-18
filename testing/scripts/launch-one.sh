@@ -91,8 +91,20 @@ done
 set -e
 
 >&2 echo "Up! Transferring assets."
-scp "${SSH_OPTS[@]}" -P "$SSH_PORT" test_payload.sh kanidm_ppa.list snapshot/kanidm_ppa.asc root@localhost:
+assets=(test_payload.sh kanidm_ppa.list)
+if [[ "$USE_LIVE" == "false" ]]; then
+	if [[ -f "snapshot/kanidm_ppa.asc" ]]; then
+		assets+=(snapshot/kanidm_ppa.asc)
+	elif [[	"$ALLOW_UNSIGNED" == "false" ]]; then
+		>&2 echo "Snapshot is missing kanidm_ppa.asc and ALLOW_UNSIGNED=false"
+		exit 1
+	fi
+fi
+scp "${SSH_OPTS[@]}" -P "$SSH_PORT" "${assets[@]}" root@localhost:
+
 >&2 echo "Launching test payload..."
+set +e
+set -x
 ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	IDM_URI="$IDM_URI" \
 	IDM_GROUP="$IDM_GROUP" \
@@ -100,9 +112,12 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	KANIDM_VERSION="$KANIDM_VERSION" \
 	CATEGORY="$CATEGORY" \
 	USE_LIVE="$USE_LIVE" \
+	IDM_PORT="$IDM_PORT" \
+	IDM_USER="$IDM_USER" \
+	SSH_PUBLICKEY="\"$SSH_PUBLICKEY\"" \
 	./test_payload.sh
+set +x
 
 >&2 echo "Done, killing qemu"
-set +e  # allow for kill failure
 kill "$(cat qemu.pid)"
 rm qemu.pid
