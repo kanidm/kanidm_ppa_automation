@@ -1,7 +1,7 @@
 # QEMU based integration testing
 
 > This place is not a place of honor... no highly esteemed deed is commemorated here... nothing valued is here.
-What is here was dangerous and repulsive to us. This message is a warning about danger. 
+What is here was dangerous and repulsive to us. This message is a warning about danger.
 
 Testing other architectures is even more Fun than packaging for them. The scripts here make it plausible, if not exactly great.
 
@@ -44,14 +44,21 @@ You can set various environment variables to change testing behavior, either to 
 - `CATEGORY` - Which mirror category to install, `stable` (default) or `nightly`.
 - `KANIDM_VERSION` - Version prefix to install from the category. `1.4` would install the latest available 1.4, say 1.4.6. The default is latest.
 - `USE_LIVE` - Use the live Kanidm PPA mirror instead of a local snapshot. Default is `false`.
+- `ALLOW_UNSIGNED` - Accept an unsigned kanidm_ppa_snapshot.zip. Defaults to `true` but raises
+  warnings.
 
 #### Settings for your environment
 - `IDM_URI` - Change which live kanidm server is used. Your user is expected to have SSH & posix enabled on this server.
+  Set to `local` to spin up kanidmd within the VM and use that. This is not yet supported in all versions.
 - `IDM_GROUP` - A posix enabled group on the above server to gate unixd authentication.
+- `IDM_USER` - Only relevant if `IDM_URI=local`. The username to set up within the internal kanidmd.
+  Defaults to `$USER`.
+- `SSH_PUBLICKEY` - Only relevant if `IDM_URI=local`. The public key to enable for SSH login.
 
 #### Port settings
 All ports are bound only on localhost, so should normally not interfere with other activity.
 
-- `MIRROR_PORT` - 31625 - Port to use for the snapshot mirror httpd
-- `SSH_PORT`    - 2222  - Port for the VM SSHD to listen on
-- `TELNET_PORT` - 4321  - Port for the VM console to listen on
+- `MIRROR_PORT` - 31625 - Port to use for the snapshot mirror httpd.
+- `SSH_PORT`    - 2222  - Port for the VM SSHD to listen on.
+- `TELNET_PORT` - 4321  - Port for the VM console to listen on.
+- `IDM_PORT` - 58915  - Port for the VM internal kanidmd. Only relevant if `IDM_URI=local`.

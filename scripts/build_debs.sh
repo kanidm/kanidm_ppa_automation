@@ -95,7 +95,7 @@ for rust_package in daemon kanidm_unix_int kanidm_tools; do
         echo "Building deb for: ${rust_package}"
         cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
     else
-        echo "::warning title=No deb metadata found for ${rust_package}, not building it!:: This may be normal if building an older version."
+        echo "::warning:: No deb metadata found for ${rust_package}, not building it! This may be normal if building an older version."
     fi
 done
 #TODO: Once variant builds are all gone, these two loops can be combined into one since --multiarch doesn't hurt non-dynlib builds.
