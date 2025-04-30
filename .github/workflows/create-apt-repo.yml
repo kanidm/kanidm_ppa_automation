@@ -26,15 +26,21 @@ jobs:
             ref: master
         os:
           # See comment for upstream support end-date after which we can drop it.
+          - name: trixie
+            image: debian:13
+            support: LTS     # 2030, June
           - name: bookworm
             image: debian:12
-            support: LTS     # 2028, June
+            support: old-LTS # 2028, June
           - name: jammy
             image: ubuntu:22.04
             support: old-LTS # 2027, April
           - name: noble
             image: ubuntu:24.04
             support: LTS     # 2029, April
+          - name: plucky
+            image: ubuntu:25.04
+            support: interim # 2026, January
         target:
           # Runner postfixes add to "ubuntu-24.04"
           - name: x86_64-unknown-linux-gnu
@@ -146,10 +152,12 @@ jobs:
           # TODO: Flip stable repo defs false -> true, _after_ we've done the first publish.
           # This enables the "import & extend" model.
           repos: |
+              trixie,stable,\"amd64,arm64\",false,debs/stable-*-trixie-*-unknown-linux-gnu/*.deb
               bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
               jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
               noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
-              bookworm,nightly,\"amd64,arm64\",false,debs/nightly-master-bookworm-*-unknown-linux-gnu/*.deb
+              plucky,stable,\"amd64,arm64\",false,debs/stable-*-plucky-*-unknown-linux-gnu/*.deb
+              trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
               noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
