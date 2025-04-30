@@ -120,6 +120,7 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	IDM_PORT="$IDM_PORT" \
 	IDM_USER="$IDM_USER" \
 	SSH_PUBLICKEY="\"$SSH_PUBLICKEY\"" \
+	PRETEND_TARGET="\"$PRETEND_TARGET\"" \
 	./test_payload.sh
 set +x
 
