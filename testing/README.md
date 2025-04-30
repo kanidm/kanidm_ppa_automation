@@ -44,6 +44,8 @@ You can set various environment variables to change testing behavior, either to 
 - `CATEGORY` - Which mirror category to install, `stable` (default) or `nightly`.
 - `KANIDM_VERSION` - Version prefix to install from the category. `1.4` would install the latest available 1.4, say 1.4.6. The default is latest.
 - `USE_LIVE` - Use the live Kanidm PPA mirror instead of a local snapshot. Default is `false`.
+- `TEST_TARGETS` - Space separated list of distro targets to run. Defaults to running all applicable
+  targets.
 - `ALLOW_UNSIGNED` - Accept an unsigned kanidm_ppa_snapshot.zip. Defaults to `true` but raises
   warnings.
 
@@ -51,8 +53,7 @@ You can set various environment variables to change testing behavior, either to 
 - `IDM_URI` - Change which live kanidm server is used. Your user is expected to have SSH & posix enabled on this server.
   Set to `local` to spin up kanidmd within the VM and use that. This is not yet supported in all versions.
 - `IDM_GROUP` - A posix enabled group on the above server to gate unixd authentication.
-- `IDM_USER` - Only relevant if `IDM_URI=local`. The username to set up within the internal kanidmd.
-  Defaults to `$USER`.
+- `IDM_USER` - User expected to be able to log in, defaults to `$USER`.
 - `SSH_PUBLICKEY` - Only relevant if `IDM_URI=local`. The public key to enable for SSH login.
 
 #### Port settings

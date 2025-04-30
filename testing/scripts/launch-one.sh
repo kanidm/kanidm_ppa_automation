@@ -7,15 +7,17 @@ set -eu
 arch="${1?}"
 img="${2?}"
 
->&2 echo "Generating ssh keys & seed.img"
+# shellcheck source=../lib/log.sh
+source lib/log.sh
+
+log "$GREEN" "Generating ssh keys & seed.img"
 cloud-localds seed.img <(scripts/gen-user-data.sh)
 
->&2 echo "Generating EFI artifacts"
+log "$GREEN" "Generating EFI artifacts"
 
 native_arch="$(uname -m)"
 if [[ "$arch" != "$native_arch" ]]; then
-	>&2 echo "This is a very bad idea, go modify the script if this is what you truly want."
-	exit 1 #  Remove this line if you're really sure.
+	log "$RED" "Overriding arch is a very bad idea, hope you know what you're doing."
 fi
 
 case "$arch" in
@@ -55,13 +57,13 @@ case "$arch" in
 		DRIVE=(-drive "if=none,file=${img},id=hd0" -device "virtio-blk-device,drive=hd0")
 		;;
 	*)
-		>&2 echo "Unsupported architecture"
+		log "$RED" "Unsupported architecture: $arch"
 		exit 1
 		;;
 esac
 
 
->&2 echo "Booting $arch $MACHINE with $EFI from $img"
+log "$GREEN" "Booting $arch $MACHINE with $EFI from $img"
 set -x
 "qemu-system-$arch"  \
   -machine type="${MACHINE}" -m 1024 \
@@ -83,26 +85,26 @@ SSH_OPTS=(-i ssh_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/
 
 set +e  # ssh will be failing on purpose
 while true; do
-	echo "Waiting for VM.. try 'nc localhost 4321' to see what's going on."
+	log "$GREEN" "Waiting for VM.. try 'nc localhost 4321' to see what's going on if this is taking too long."
 	output=$(ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" -o ConnectTimeout=1 root@localhost whoami)
 	[[ "$output" == "root" ]] && break
 	sleep 10s
 done
 set -e
 
->&2 echo "Up! Transferring assets."
+log "$GREEN" "Up! Transferring assets."
 assets=(test_payload.sh kanidm_ppa.list)
 if [[ "$USE_LIVE" == "false" ]]; then
 	if [[ -f "snapshot/kanidm_ppa.asc" ]]; then
 		assets+=(snapshot/kanidm_ppa.asc)
 	elif [[	"$ALLOW_UNSIGNED" == "false" ]]; then
-		>&2 echo "Snapshot is missing kanidm_ppa.asc and ALLOW_UNSIGNED=false"
+		log "$RED" "Snapshot is missing kanidm_ppa.asc and ALLOW_UNSIGNED=false"
 		exit 1
 	fi
 fi
 scp "${SSH_OPTS[@]}" -P "$SSH_PORT" "${assets[@]}" root@localhost:
 
->&2 echo "Launching test payload..."
+log "$GREEN" "Launching test payload..."
 set +e
 set -x
 ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
@@ -118,6 +120,6 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	./test_payload.sh
 set +x
 
->&2 echo "Done, killing qemu"
+log "$GREEN" "Done, killing qemu"
 kill "$(cat qemu.pid)"
 rm qemu.pid
