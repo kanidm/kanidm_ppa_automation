@@ -27,26 +27,33 @@ jobs:
           - name: nightly
             ref: master
         os:
-          # Runner defaults to ubuntu-24.04
-          - name: ubuntu-22.04  # Upstream LTS support ends 2027.
-            image: ubuntu:22.04
-          - name: ubuntu-24.04  # Upstream LTS support ends 2029.
-            image: ubuntu:24.04
-          - name: ubuntu-24.10  # Upstream support ends April 2029.
-            image: ubuntu:24.10
-          - name: debian-12     # Upstream LTS support ends 2028.
+          # See comment for upstream support end-date after which we can drop it.
+          - name: bookworm
             image: debian:12
-
+            support: LTS     # 2028, June
+          - name: jammy
+            image: ubuntu:22.04
+            support: old-LTS # 2027, April
+          - name: noble
+            image: ubuntu:24.04
+            support: LTS     # 2029, April
+          - name: oracular
+            image: ubuntu:24.10
+            support: interim # 2025, July
+          - name: plucky
+            image: ubuntu:25.04
+            support: interim # 2026, January
         target:
+          # Runner postfixes add to "ubuntu-24.04"
           - name: x86_64-unknown-linux-gnu
             runner-postfix: ""
           - name: aarch64-unknown-linux-gnu
             runner-postfix: "-arm"
-        exclude:  # Nightlies are only for latest LTS versions
+        exclude:  # Nightlies are only for latest LTS versions, exclude old-LTS & interim
           - category: {name: nightly}
-            os: {name: ubuntu-22.04}
+            os: {support: old-LTS}
           - category: {name: nightly}
-            os: {name: ubuntu-24.10}
+            os: {support: interim}
 
     runs-on: "ubuntu-24.04${{ matrix.target.runner-postfix }}"
     container: "${{ matrix.os.image }}"
@@ -144,11 +151,13 @@ jobs:
           # TODO: Flip stable repo defs false -> true, _after_ we've done the first publish.
           # This enables the "import & extend" model.
           repos: |
-              noble,stable,\"amd64,arm64\",false,debs/stable-*-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              jammy,stable,\"amd64,arm64\",false,debs/stable-*-ubuntu-22.04-*-unknown-linux-gnu/*.deb
-              noble,nightly,\"amd64,arm64\",false,debs/nightly-master-ubuntu-24.04-*-unknown-linux-gnu/*.deb
-              bookworm,stable,\"amd64,arm64\",false,debs/stable-*-debian-12-*-unknown-linux-gnu/*.deb
-              bookworm,nightly,\"amd64,arm64\",false,debs/nightly-master-debian-12-*-unknown-linux-gnu/*.deb
+              bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
+              jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
+              noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
+              oracular,stable,\"amd64,arm64\",false,debs/stable-*-oracular-*-unknown-linux-gnu/*.deb
+              plucky,stable,\"amd64,arm64\",false,debs/stable-*-plucky-*-unknown-linux-gnu/*.deb
+              bookworm,nightly,\"amd64,arm64\",false,debs/nightly-master-bookworm-*-unknown-linux-gnu/*.deb
+              noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
