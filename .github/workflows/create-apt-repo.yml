@@ -19,11 +19,10 @@ jobs:
         category:
             # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
           - name: stable
-            ref: 7ce4af79bae1f1a022b3d03e99fbb3bda0a995a3  # v1.4.6 + packaging backports
-            variant: true  # Enables old variant based cargo-deb, being phased out
-          - name: stable
             ref: v1.5.0
-            variant: true
+            variant: true  # Last release to need variant builds
+          - name: stable
+            ref: v1.6.2
           - name: nightly
             ref: master
         os:
