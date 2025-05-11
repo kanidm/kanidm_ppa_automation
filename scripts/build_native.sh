@@ -34,6 +34,7 @@ cargo build --target "$target" \
   --bin kanidm_unixd \
   --bin kanidm_unixd_tasks \
   --bin kanidm_ssh_authorizedkeys \
+  --bin kanidm_ssh_authorizedkeys_direct \
   --bin kanidm-unix \
   --bin kanidm \
   --bin kanidmd \

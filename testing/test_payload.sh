@@ -165,6 +165,16 @@ LogLevel DEBUG1
 EOT
 systemctl restart ssh.service || debug
 
+log "$GREEN" "Running basic testing of results:"
+set -x
+getent passwd "$IDM_USER" || debug
+[[ -n $(/usr/sbin/kanidm_ssh_authorizedkeys "$IDM_USER") ]] || debug
+if [[ -x /usr/bin/kanidm_ssh_authorizedkeys_direct ]]; then
+  [[ -n $(/usr/bin/kanidm_ssh_authorizedkeys_direct --name anonymous "$IDM_USER") ]] || debug
+fi
+set +x
+
+
 log "$GREEN" "Go test ssh login! Do a ^C here when you're done"
 log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null localhost -p 2222"
 log "$GREEN" "Or for direct ssh skipping unixd:"
