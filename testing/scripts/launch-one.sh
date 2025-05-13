@@ -94,7 +94,9 @@ set -e
 
 log "$GREEN" "Up! Transferring assets."
 assets=(test_payload.sh kanidm_ppa.list)
-if [[ "$USE_LIVE" == "false" ]]; then
+if [[ "$USE_DEBDIR" != "false" ]]; then
+	assets+=("$USE_DEBDIR"/*.deb)
+elif [[ "$USE_LIVE" == "false" ]]; then
 	if [[ -f "snapshot/kanidm_ppa.asc" ]]; then
 		assets+=(snapshot/kanidm_ppa.asc)
 	elif [[	"$ALLOW_UNSIGNED" == "false" ]]; then
@@ -114,6 +116,7 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	KANIDM_VERSION="$KANIDM_VERSION" \
 	CATEGORY="$CATEGORY" \
 	USE_LIVE="$USE_LIVE" \
+	USE_DEBDIR="$USE_DEBDIR" \
 	IDM_PORT="$IDM_PORT" \
 	IDM_USER="$IDM_USER" \
 	SSH_PUBLICKEY="\"$SSH_PUBLICKEY\"" \

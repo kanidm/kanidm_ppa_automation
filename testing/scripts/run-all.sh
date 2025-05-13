@@ -10,6 +10,7 @@ export TELNET_PORT="${TELNET_PORT:-4321}"
 export MIRROR_PORT="${MIRROR_PORT:-31625}"
 export CATEGORY="${CATEGORY:-stable}"
 export USE_LIVE="${USE_LIVE:-false}"
+export USE_DEBDIR="${USE_DEBDIR:-false}"  # If not false, expected to be a directory
 export KANIDM_VERSION="${KANIDM_VERSION:-*}"  # * default picks latest
 export IDM_USER="${IDM_USER:-$USER}"
 export IDM_PORT="${IDM_PORT:-58915}"  # Only relevant if IDM_URI=local
@@ -75,8 +76,10 @@ function get_images(){
           file="$(basename "$url")"
           if [[ ! -f "images/${file}" ]]; then
                   wget "$url" -O "images/${file}"
-                  log "$GREEN" "Resizing $file so our dpkg operations will fit"
-                  qemu-img resize "images/${file}" +500M
+                  log "$GREEN" "Resizing $file so the dpkg operations & debug binaries will fit"
+                  # The bump is quite big as the worst case scenario has ~100MiB empty after
+                  # debug deb installs even with this size. This does not increase the on-disk size.
+                  qemu-img resize "images/${file}" +1.5G  
           fi
   done
 }
@@ -100,27 +103,29 @@ log "$GREEN" "Full set of test targets:${ENDCOLOR} ${targets[*]}"
 ### Launch the repo snapshot in the background
 # Assumes you've downloaded kanidm_ppa_snapshot.zip from a signed fork branch.
 
-if [[ "$USE_LIVE" == "false" ]]; then
+if [[ "$USE_LIVE" == "false" && "$USE_DEBDIR" == "false" ]]; then
   log "$GREEN" "Launching mirror snapshot..."
   if [[ ! -f kanidm_ppa_snapshot.zip ]]; then
-    log "$RED" "kanidm_ppa_snapshot.zip is missing in $PWD, we need it for packages. Or set USE_LIVE=true"
+    log "$RED" "kanidm_ppa_snapshot.zip is missing in $PWD, we need it for packages."
+    log "$RED" "Alternatively set USE_LIVE=true, or provide a USE_DEBDIR with deb packages."
     exit 1
   fi
   scripts/run-mirror.sh kanidm_ppa_snapshot.zip &
   sleep 2s  # A bit of time for the unzip before we try to use the mirror
 fi
 
+modestring="mirror snapshot, version: ${KANIDM_VERSION}/${CATEGORY}"
+[[ "$USE_DEBDIR" != "false" ]] && modestring="debs from ${USE_DEBDIR}"
+[[ "$USE_LIVE" == "true" ]] && modestring="live mirror, version: ${KANIDM_VERSION}/${CATEGORY}"
+
 trap cleanup EXIT
 
-### Sequencing of permutations.
-
-
-
+# Ensure the right VM images are present
 get_images "${targets[@]}"
 
-for distro in "${targets[@]}"; do
-  log "$GREEN" "Testing target: ${ENDCOLOR} ${distro} ${CPUARCH}/${OSARCH} w/ IDM_URI=${IDM_URI}, ${CATEGORY} @ USE_LIVE=${USE_LIVE}"
-  run "$distro"
+for target in "${targets[@]}"; do
+  log "$GREEN" "Testing target: ${ENDCOLOR} ${distro} ${CPUARCH}/${OSARCH} w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
+  run "$target"
 done
 log "$GREEN" "Done with all targets"
 

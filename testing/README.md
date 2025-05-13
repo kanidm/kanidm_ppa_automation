@@ -5,15 +5,21 @@ What is here was dangerous and repulsive to us. This message is a warning about 
 
 Testing other architectures is even more Fun than packaging for them. The scripts here make it plausible, if not exactly great.
 
+## Prerequisites
+1. Expect qemu to consume at least 1.2GiB of RAM in the worst case scenario.
+2. Run `scripts/install-deps.sh` to install system level dependencies such as qemu. It assumes Debian, so you may need to substitute as necessary.
+3. Your normal user is assumed to be able to run qemu & KVM. Usually this means belonging to the `kvm` group.
+
+## Testing procedure
+
 1. `cd` to the root of the `testing/` dir.
-1. Download a GHA repo snapshot artifact zip and place it in the current directory as `kanidm_ppa_snapshot.zip`
-1. Run `scripts/install-deps.sh` to install system level dependencies such as qemu. It assumes Debian, so you may need to substitute as necessary.
-1. Make sure your user can run qemu. Generally this means being added to the `kvm` group.
+1. Download a GHA repo snapshot artifact zip and place it in the current directory as `kanidm_ppa_snapshot.zip`. Or, check the settings
+   further down to test in other ways without a snapshot.
 1. Run `IDM_URI=https://idm.example.com scripts/run-all.sh`, you may want to override other bits of env, see the bottom of this README.
    - At first your snapshot is unpacked and a mirror is launched with the contents listening on localhost.
    - You can view what's going on in the console of the qemu VM with `nc localhost 4321`, this is only necessary if something goes horribly wrong.
-   - You can poke at the qemu console itself with `socat -,echo=0,icanon=0 unix-connect:qemu-monitor.socket`
-1. Once the VM is up and reachable, integration starts. Once it's following the kanidm-unixd & sshd logs you're ready to test.
+   - You can poke at the qemu console itself with `socat -,echo=0,icanon=0 unix-connect:qemu-monitor.socket` if something is even more wrong.
+1. Once the VM is up and reachable, integration starts. Once it's following the kanidm-unixd, kanidm-unixd-tasks & sshd logs you're ready to test.
    If anything goes wrong, execution will pause instead with a warning to allow investigation.
 1. Testing time.
    - A good basic test is to run in another terminal:
@@ -39,13 +45,17 @@ Testing other architectures is even more Fun than packaging for them. The script
 
 ### Config tweaks
 You can set various environment variables to change testing behavior, either to suit your environment, or to test different things.
+For example, `USE_DEBDIR` can be very helpful in rapid testing of packaging & code changes without waiting for a full snapshot
+build from GHA, though less valuable for proving the PPA itself will be functional.
 
 #### Testing different things
 - `CATEGORY` - Which mirror category to install, `stable` (default) or `nightly`.
 - `KANIDM_VERSION` - Version prefix to install from the category. `1.4` would install the latest available 1.4, say 1.4.6. The default is latest.
 - `USE_LIVE` - Use the live Kanidm PPA mirror instead of a local snapshot. Default is `false`.
+- `USE_DEBDIR` - Instead of a mirror snapshot (the default) or the live mirror, install deb
+packages from the dir given with this option.
 - `TEST_TARGETS` - Space separated list of distro targets to run. Defaults to running all applicable
-  targets.
+  targets. See `lib/targets.sh` for valid targets.
 - `ALLOW_UNSIGNED` - Accept an unsigned kanidm_ppa_snapshot.zip. Defaults to `true` but raises
   warnings.
 
