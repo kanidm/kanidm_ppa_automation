@@ -7,6 +7,7 @@ MIRROR_PORT="${MIRROR_PORT?}"
 KANIDM_VERSION="${KANIDM_VERSION?}"
 CATEGORY="${CATEGORY?}"
 USE_LIVE="${USE_LIVE?}"
+USE_DEBDIR="${USE_DEBDIR?}"
 IDM_URI="${IDM_URI?}"
 IDM_PORT="${IDM_PORT?}"
 IDM_USER="${IDM_USER?}"
@@ -24,6 +25,7 @@ function log(){
 }
 
 function debug(){
+  set +x
 	log "$RED" "Something went wrong, pausing for debug, to connect:"
 	log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
 	sleep infinity
@@ -36,13 +38,31 @@ function dyn_run(){
     "$@"
 }
 
+# A much quicker & repeatable targeted apt update, we only care about our mirror
+function apt_update(){
+  apt-get update -y \
+    -o Dir::Etc::sourcelist="sources.list.d/kanidm_ppa.list" \
+    -o Dir::Etc::sourceparts="-" \
+    -o APT::Get::List-Cleanup="0"
+}
+
 source /etc/os-release
 log "$GREEN" "Running test payload on $(uname -m) for ${PRETTY_NAME}"
+
+# Sometimes qemu isn't so great at networking, and it's real confusing if we don't explicitly fail on it
+test_uri="$IDM_URI"
+[[ "$IDM_URI" == "local" ]] && test_uri="https://github.com"
+log "$GREEN" "Testing network connectivity to ${test_uri} ..."
+curl -s "$test_uri" > /dev/null || debug
 
 # Make apt shut up about various things to see relevant output better
 export DEBIAN_FRONTEND=noninteractive
 export LC_CTYPE=C.UTF-8
 export LC_ALL=C.UTF-8
+
+# Cloud images come with an empty cache and we need dependencies
+log "$GREEN" "Refreshing apt cache..."
+apt update || debug
 
 if [[ "$USE_LIVE" == "true" ]]; then
   log "$GREEN" "Configuring live mirror..."
@@ -54,7 +74,11 @@ if [[ "$USE_LIVE" == "true" ]]; then
     > /etc/apt/sources.list.d/kanidm_ppa.list || debug
   set +x
   cat /etc/apt/sources.list.d/kanidm_ppa.list
+  apt_update || debug
+elif [[ "$USE_DEBDIR" != "false" ]]; then
+  log "$GREEN" "USE_DEBDIR is enabled, skipping repo config and instead installing from:$ENDCOLOR $(ls ./*.deb)"
 else
+  # Default is to assume a templated localhost mirror file was pushed in and use that.
   if [[ -f kanidm_ppa.asc ]]; then
     mv kanidm_ppa.asc /etc/apt/trusted.gpg.d/
   else
@@ -65,26 +89,30 @@ else
   sed "s/%MIRROR_PORT%/${MIRROR_PORT}/;s/%VERSION_CODENAME%/${VERSION_CODENAME}/;s/%CATEGORY%/${CATEGORY}/" kanidm_ppa.list > /etc/apt/sources.list.d/kanidm_ppa.list || debug
   log "$GREEN" "Using snapshot mirror:"
   cat /etc/apt/sources.list.d/kanidm_ppa.list
+  apt_update || debug
 fi
-
-# Sometimes qemu isn't so great at networking, and it's real confusing if we don't explicitly fail on it
-test_uri="$IDM_URI"
-[[ "$IDM_URI" == "local" ]] && test_uri="https://github.com"
-log "$GREEN" "Testing network connectivity to ${test_uri} ..."
-curl -s "$test_uri" > /dev/null || debug
-
-apt update || debug
-
-# Resolve the given version spec to an exact one
-version="$(apt-cache show "kanidm-unixd=${KANIDM_VERSION}*" | sed -nE 's/^Version: (.*)/\1/p')"
 
 LOCAL_IDM="false"
 if [[ "$IDM_URI" == "local" ]]; then
   LOCAL_IDM="true"
-log "$GREEN" "Installing kanidmd & kanidm packages for version: ${version}"
-  apt install -y jq \
-    "kanidmd=${version}" \
-    "kanidm=${version}"
+  if [[ "$USE_DEBDIR" != "false" ]]; then
+    # apt-get allows installing debs and helps resolve dependencies
+    # BUT they need to look like paths and not package names.
+    mapfile -t kanidmd_debs <<< "$(readlink -f ./kanidmd_*.deb ./kanidm_*.deb)"
+    log "$GREEN" "Installing kanidmd & kanidm packages from provided debs"
+    set -x
+    apt-get install -y "${kanidmd_debs[@]}" || debug
+    set +x
+  else
+    # Default assumes mirror
+    version="$(apt-cache show "kanidm-unixd=${KANIDM_VERSION}*" | sed -nE 's/^Version: (.*)/\1/p')"
+    log "$GREEN" "Installing kanidmd & kanidm packages for version: ${version}"
+    set -x
+    apt-get install -y jq \
+      "kanidmd=${version}" \
+      "kanidm=${version}" || debug
+    set +x
+  fi
   log "$GREEN" "Configuring kanidm cli..."
   mkdir -p /etc/kanidm
   sed -e "s_^uri =_uri = _" /usr/share/kanidm/config > /etc/kanidm/config
@@ -131,13 +159,28 @@ Environment="RUST_LOG=kanidm=debug"
 EOF
 done
 
-log "$GREEN" "Installing kanidm-unixd & kanidm packages for version: ${version}"
-apt install -y zsh \
-  "kanidm-unixd=${version}" \
-  "kanidm=${version}" \
-  "libpam-kanidm=${version}" \
-  "libnss-kanidm=${version}" \
-  || debug
+log "$GREEN" "Installing debug tools in-case you need them"
+apt-get install -y strace
+
+if [[ "$USE_DEBDIR" != "false" ]]; then
+  # apt-get allows installing debs and helps resolve dependencies
+  # BUT they need to look like paths and not package names.
+  mapfile -t kanidmd_debs <<< "$(readlink -f ./kanidmd_*.deb ./kanidm_*.deb)"
+  mapfile -t unixd_debs <<< "$(readlink -f ./kanidm_*.deb ./kanidm-unixd_*.deb ./lib*-kanidm_*.deb)"
+  log "$GREEN" "Installing kanidm-unixd & kanidm packages from provided debs: ${unixd_debs[*]}"
+  set -x
+  apt-get install -y "${unixd_debs[@]}" || debug
+  set +x
+else
+  version="$(apt-cache show "kanidm-unixd=${KANIDM_VERSION}*" | sed -nE 's/^Version: (.*)/\1/p')"
+  log "$GREEN" "Installing kanidm-unixd & kanidm packages for version: ${version}"
+  apt-get install -y zsh \
+    "kanidm-unixd=${version}" \
+    "kanidm=${version}" \
+    "libpam-kanidm=${version}" \
+    "libnss-kanidm=${version}" \
+    || debug
+fi
 
 log "$GREEN" "Configuring kanidm-unixd..."
 if [[ "$LOCAL_IDM" == "true" ]]; then
@@ -180,4 +223,5 @@ log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null
 log "$GREEN" "Or for direct ssh skipping unixd:"
 log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
 log "$GREEN" "Now following kanidm-unixd, kanidm-unixd-tasks & ssh logs:"
-journalctl -f -u kanidm-unixd.service -u kanidm-unixd-tasks.service -u ssh.service
+# We filter the logging slightly to drop multi-screen long event dumps 
+(journalctl -f --lines 50 -o short-iso-precise -u kanidm-unixd.service -u kanidm-unixd-tasks.service -u ssh.service | sed --unbuffered -E 's/(DebouncedEvent|EtcDb) .*/\[.. debugdump omitted for brevity ..\]/') || debug
