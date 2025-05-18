@@ -22,7 +22,7 @@ jobs:
             ref: v1.5.0
             variant: true  # Last release to need variant builds
           - name: stable
-            ref: v1.6.2
+            ref: v1.6.3
           - name: nightly
             ref: master
         os:
