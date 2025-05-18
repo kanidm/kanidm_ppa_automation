@@ -6,8 +6,9 @@ What is here was dangerous and repulsive to us. This message is a warning about 
 Testing other architectures is even more Fun than packaging for them. The scripts here make it plausible, if not exactly great.
 
 ## Prerequisites
-1. Run `scripts/install-deps.sh` to install system level dependencies such as qemu. It assumes Debian, so you may need to substitute as necessary.
-2. Your normal user is assumed to be able to run qemu & KVM. Usually this means belonging to the `kvm` group.
+1. Expect qemu to consume at least 1.2GiB of RAM in the worst case scenario.
+2. Run `scripts/install-deps.sh` to install system level dependencies such as qemu. It assumes Debian, so you may need to substitute as necessary.
+3. Your normal user is assumed to be able to run qemu & KVM. Usually this means belonging to the `kvm` group.
 
 ## Testing procedure
 

@@ -101,7 +101,7 @@ if [[ "$IDM_URI" == "local" ]]; then
     mapfile -t kanidmd_debs <<< "$(readlink -f ./kanidmd_*.deb ./kanidm_*.deb)"
     log "$GREEN" "Installing kanidmd & kanidm packages from provided debs"
     set -x
-    apt-get install -y "${kanidmd_debs[@]}" || debug
+    apt-get install -y jq "${kanidmd_debs[@]}" || debug
     set +x
   else
     # Default assumes mirror
@@ -124,7 +124,7 @@ if [[ "$IDM_URI" == "local" ]]; then
   
   log "$GREEN" "Generating certs for kanidmd..."
   # Work around issue #3505, the DB must exist before cert-generate
-  dyn_run touch /var/lib/private/kanidmd/kanidm.{db,db.klock}
+  dyn_run touch /var/lib/private/kanidmd/kanidm.db
   kanidmd cert-generate || debug
 
   log "$GREEN" "Starting kanidmd..."
