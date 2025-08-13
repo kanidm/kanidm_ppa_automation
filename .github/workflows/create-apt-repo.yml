@@ -36,6 +36,8 @@ jobs:
             image: ubuntu:24.10
           - name: debian-12     # Upstream LTS support ends 2028.
             image: debian:12
+          - name: debian-13     # Upstream LTS support ends 2030.
+            image: debian:13
 
         target:
           - name: x86_64-unknown-linux-gnu
@@ -149,6 +151,8 @@ jobs:
               noble,nightly,\"amd64,arm64\",false,debs/nightly-master-ubuntu-24.04-*-unknown-linux-gnu/*.deb
               bookworm,stable,\"amd64,arm64\",false,debs/stable-*-debian-12-*-unknown-linux-gnu/*.deb
               bookworm,nightly,\"amd64,arm64\",false,debs/nightly-master-debian-12-*-unknown-linux-gnu/*.deb
+              trixie,stable,\"amd64,arm64\",false,debs/stable-*-debian-13-*-unknown-linux-gnu/*.deb
+              trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-debian-13-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
