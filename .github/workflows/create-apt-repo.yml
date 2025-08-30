@@ -113,8 +113,6 @@ jobs:
           | xargs llvm-strip --strip-all
       # Step 2. deb build
       - name: Build packages (debs)
-        env:
-          VARIANT: "${{ matrix.category.variant }}"
         run: |
           platform/debian/kanidm_ppa_automation/scripts/build_debs.sh "${{ matrix.target.name }}"
 

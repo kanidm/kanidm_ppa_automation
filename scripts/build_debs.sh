@@ -22,20 +22,6 @@ if [ ! -f "Cargo.toml" ]; then
     exit 1
 fi
 
-if [ -z "${VERBOSE}" ]; then
-    VERBOSE=""
-else
-    VERBOSE="-v"
-fi
-
-if [ -z "${VARIANT}" ]; then
-    VARIANT=""
-else
-    VARIANT="--variant=$target"
-    echo "Enabling cargo-deb variant build: $VARIANT"
-fi
-
-
 if [ -f "${HOME}/.cargo/env" ]; then
     # shellcheck disable=SC1091
     source "${HOME}/.cargo/env"
@@ -88,24 +74,20 @@ echo "Packaging for: ${target}"
 # Build debs per rust package
 metadata_path=$(mktemp)
 cargo metadata --format-version 1 --filter-platform "$target" > "$metadata_path"
-for rust_package in daemon kanidm_unix_int kanidm_tools; do
+for rust_package in daemon kanidm_unix_int kanidm_tools pam_kanidm nss_kanidm; do
     # Check that we have a config for the package
     manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
     if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
         echo "Building deb for: ${rust_package}"
-        cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION"
-    else
-        echo "::warning:: No deb metadata found for ${rust_package}, not building it! This may be normal if building an older version."
-    fi
-done
-#TODO: Once variant builds are all gone, these two loops can be combined into one since --multiarch doesn't hurt non-dynlib builds.
-for rust_package in pam_kanidm nss_kanidm; do
-    # Check that we have a config for the package
-    manifest_path="$(jq -c ".packages[] | select ( .name == \"$rust_package\" ) | .manifest_path" "$metadata_path" | tr -d \")"
-    if [[ "$(grep -c 'package.metadata.deb' "$manifest_path")" != 0 ]]; then
-        echo "Building deb for: ${rust_package}"
-    # sdynlibs need to use a target specific variant to support multiarch paths
-        cargo deb "$VERBOSE" -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" --multiarch=foreign "$VARIANT"
+        extra_args=()
+        if [[ -n "$VERBOSE" ]]; then
+            extra_args+=("-v")
+        fi
+        # kanidmd needs to drop a config at /usr/lib/sysusers.d, not an arch specific variant
+        if [[ "$rust_package" != "daemon" ]]; then
+            extra_args+=("--multiarch=foreign")
+        fi
+        cargo deb -p "${rust_package}" --no-build --target "$target" --deb-version "$PACKAGE_VERSION" "${extra_args[@]}"
     else
         echo "::warning No deb metadata found for ${rust_package}, not building it! This may be normal if building an older version."
     fi
