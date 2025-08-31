@@ -34,7 +34,7 @@ fi
 # Source release variables to get $PRETTY_NAME
 . /etc/os-release
 
-echo "Building for: ${target}  with profile ${KANIDM_BUILD_PROFILE} & rust ${RUST_VERSION} on ${PRETTY_NAME}"
+echo "Building for: ${target}  with profile ${KANIDM_BUILD_PROFILE} & rust ${RUSTUP_TOOLCHAIN} on ${PRETTY_NAME}"
 
 cargo build --target "$target" \
   --bin kanidm_unixd \
