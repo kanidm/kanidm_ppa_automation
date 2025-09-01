@@ -7,6 +7,7 @@ MIRROR_PORT="${MIRROR_PORT?}"
 KANIDM_VERSION="${KANIDM_VERSION?}"
 CATEGORY="${CATEGORY?}"
 USE_LIVE="${USE_LIVE?}"
+USE_DEBDIR="${USE_DEBDIR?}"
 IDM_URI="${IDM_URI?}"
 IDM_PORT="${IDM_PORT?}"
 IDM_USER="${IDM_USER?}"
@@ -14,14 +15,19 @@ SSH_PUBLICKEY="${SSH_PUBLICKEY?}"
 
 # Use a bit of color so it's easier to spot payload log vs. target output
 RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[32m"
 ENDCOLOR="\e[0m"
 function log(){
-  >&2 echo -e "${RED}${1}${ENDCOLOR}"
+  color="$1"
+  shift
+  >&2 echo -e "${color}${*}${ENDCOLOR}"
 }
 
 function debug(){
-	log "Something went wrong, pausing for debug, to connect:"
-	log "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
+  set +x
+	log "$RED" "Something went wrong, pausing for debug, to connect:"
+	log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
 	sleep infinity
 }
 
@@ -32,72 +38,100 @@ function dyn_run(){
     "$@"
 }
 
+# A much quicker & repeatable targeted apt update, we only care about our mirror
+function apt_update(){
+  apt-get update -y \
+    -o Dir::Etc::sourcelist="sources.list.d/kanidm_ppa.list" \
+    -o Dir::Etc::sourceparts="-" \
+    -o APT::Get::List-Cleanup="0"
+}
+
 source /etc/os-release
-log "Running test payload on $(uname -m) for ${PRETTY_NAME}"
+log "$GREEN" "Running test payload on $(uname -m) for ${PRETTY_NAME}"
+
+# Sometimes qemu isn't so great at networking, and it's real confusing if we don't explicitly fail on it
+test_uri="$IDM_URI"
+[[ "$IDM_URI" == "local" ]] && test_uri="https://github.com"
+log "$GREEN" "Testing network connectivity to ${test_uri} ..."
+curl -s "$test_uri" > /dev/null || debug
 
 # Make apt shut up about various things to see relevant output better
 export DEBIAN_FRONTEND=noninteractive
 export LC_CTYPE=C.UTF-8
 export LC_ALL=C.UTF-8
 
+# Cloud images come with an empty cache and we need dependencies
+log "$GREEN" "Refreshing apt cache..."
+apt update || debug
+
 if [[ "$USE_LIVE" == "true" ]]; then
-  log "Configuring live mirror..."
-  curl -s "https://kanidm.github.io/kanidm_ppa/kanidm_ppa.asc" > /etc/apt/trusted.gpg.d/kanidm_ppa.asc
+  log "$GREEN" "Configuring live mirror..."
+  set -x
+  curl -s "https://kanidm.github.io/kanidm_ppa/kanidm_ppa.asc" > /etc/apt/trusted.gpg.d/kanidm_ppa.asc || debug
   curl -s "https://kanidm.github.io/kanidm_ppa/kanidm_ppa.list" \
     | grep "$( ( . /etc/os-release && echo "$VERSION_CODENAME") )" \
     | grep "$CATEGORY" \
-    > /etc/apt/sources.list.d/kanidm_ppa.list
+    > /etc/apt/sources.list.d/kanidm_ppa.list || debug
+  set +x
   cat /etc/apt/sources.list.d/kanidm_ppa.list
+  apt_update || debug
+elif [[ "$USE_DEBDIR" != "false" ]]; then
+  log "$GREEN" "USE_DEBDIR is enabled, skipping repo config and instead installing from:$ENDCOLOR $(ls ./*.deb)"
 else
+  # Default is to assume a templated localhost mirror file was pushed in and use that.
   if [[ -f kanidm_ppa.asc ]]; then
     mv kanidm_ppa.asc /etc/apt/trusted.gpg.d/
   else
-    log "No signing key, configuring mirror to be unsigned.."
+    log "$YELLOW" "No signing key, configuring mirror to be unsigned.."
     sed -e 's/\[.*\]/[trusted=yes]/' -i kanidm_ppa.list
   fi
   ls -la /etc/apt/sources.list.d/ || debug
   sed "s/%MIRROR_PORT%/${MIRROR_PORT}/;s/%VERSION_CODENAME%/${VERSION_CODENAME}/;s/%CATEGORY%/${CATEGORY}/" kanidm_ppa.list > /etc/apt/sources.list.d/kanidm_ppa.list || debug
-  log "Using snapshot mirror:"
+  log "$GREEN" "Using snapshot mirror:"
   cat /etc/apt/sources.list.d/kanidm_ppa.list
+  apt_update || debug
 fi
-
-# Sometimes qemu isn't so great at networking, and it's real confusing if we don't explicitly fail on it
-test_uri="$IDM_URI"
-[[ "$IDM_URI" == "local" ]] && test_uri="https://github.com"
-log "Testing network connectivity to ${test_uri} ..."
-curl -s "$test_uri" > /dev/null || debug
-
-apt update || debug
-
-# Resolve the given version spec to an exact one
-version="$(apt-cache show "kanidm-unixd=${KANIDM_VERSION}*" | sed -nE 's/^Version: (.*)/\1/p')"
 
 LOCAL_IDM="false"
 if [[ "$IDM_URI" == "local" ]]; then
   LOCAL_IDM="true"
-log "Installing kanidmd & kanidm packages for version: ${version}"
-  apt install -y jq \
-    "kanidmd=${version}" \
-    "kanidm=${version}"
-  log "Configuring kanidm cli..."
+  if [[ "$USE_DEBDIR" != "false" ]]; then
+    # apt-get allows installing debs and helps resolve dependencies
+    # BUT they need to look like paths and not package names.
+    mapfile -t kanidmd_debs <<< "$(readlink -f ./kanidmd_*.deb ./kanidm_*.deb)"
+    log "$GREEN" "Installing kanidmd & kanidm packages from provided debs"
+    set -x
+    apt-get install -y jq "${kanidmd_debs[@]}" || debug
+    set +x
+  else
+    # Default assumes mirror
+    version="$(apt-cache show "kanidm-unixd=${KANIDM_VERSION}*" | sed -nE 's/^Version: (.*)/\1/p')"
+    log "$GREEN" "Installing kanidmd & kanidm packages for version: ${version}"
+    set -x
+    apt-get install -y jq \
+      "kanidmd=${version}" \
+      "kanidm=${version}" || debug
+    set +x
+  fi
+  log "$GREEN" "Configuring kanidm cli..."
   mkdir -p /etc/kanidm
   sed -e "s_^uri =_uri = _" /usr/share/kanidm/config > /etc/kanidm/config
-  log "Configuring kanidmd..."
+  log "$GREEN" "Configuring kanidmd..."
   IDM_URI="https://localhost:${IDM_PORT}"
   sed "/bindaddress/s/8443/${IDM_PORT}/" -i /etc/kanidmd/server.toml
   sed "s/#domain =.*/domain = \"localhost\"/" -i /etc/kanidmd/server.toml
   sed "s_#origin =.*_origin = \"${IDM_URI}\"_" -i /etc/kanidmd/server.toml
   
-  log "Generating certs for kanidmd..."
+  log "$GREEN" "Generating certs for kanidmd..."
   # Work around issue #3505, the DB must exist before cert-generate
-  dyn_run touch /var/lib/private/kanidmd/kanidm.{db,db.klock}
+  dyn_run touch /var/lib/private/kanidmd/kanidm.db
   kanidmd cert-generate || debug
 
-  log "Starting kanidmd..."
+  log "$GREEN" "Starting kanidmd..."
   systemctl start kanidmd.service || debug
   sleep 5s
   
-  log "Seeding kanidmd for posix login..."
+  log "$GREEN" "Seeding kanidmd for posix login..."
   password="$(kanidmd recover-account idm_admin -o json | grep password | jq .password | tr -d \")"
   # kanidm the cli tool doesn't ship with a default config, and unixd does.
   # So instead of poking at that whole mess, we just use a temporary config.
@@ -113,37 +147,57 @@ log "Installing kanidmd & kanidm packages for version: ${version}"
   rm -r /etc/kanidm  # Terminate the temporary config so the proper is generated later by dpkg
 fi
 
-log "Installing kanidm-unixd & kanidm packages for version: ${version}"
-apt install -y zsh \
-  "kanidm-unixd=${version}" \
-  "kanidm=${version}" \
-  "libpam-kanidm=${version}" \
-  "libnss-kanidm=${version}" \
-  || debug
+log "$GREEN" "Pre-emptively enabling debug logging for kanidm services"
+for service in kanidm-unixd kanidm-unixd-tasks; do
+  mkdir -p "/etc/systemd/system/${service}.service.d"
+  cat << EOF > "/etc/systemd/system/${service}.service.d/env.conf"
+[Service]
+# Needed for =< 1.5
+Environment="KANIDM_DEBUG=true"
+# Works for >= 1.6
+Environment="RUST_LOG=kanidm=debug"
+EOF
+done
 
-log "Configuring kanidm-unixd..."
+log "$GREEN" "Installing debug tools in-case you need them"
+apt-get install -y strace
+
+if [[ "$USE_DEBDIR" != "false" ]]; then
+  # apt-get allows installing debs and helps resolve dependencies
+  # BUT they need to look like paths and not package names.
+  mapfile -t kanidmd_debs <<< "$(readlink -f ./kanidmd_*.deb ./kanidm_*.deb)"
+  mapfile -t unixd_debs <<< "$(readlink -f ./kanidm_*.deb ./kanidm-unixd_*.deb ./lib*-kanidm_*.deb)"
+  log "$GREEN" "Installing kanidm-unixd & kanidm packages from provided debs: ${unixd_debs[*]}"
+  set -x
+  apt-get install -y "${unixd_debs[@]}" || debug
+  set +x
+else
+  version="$(apt-cache show "kanidm-unixd=${KANIDM_VERSION}*" | sed -nE 's/^Version: (.*)/\1/p')"
+  log "$GREEN" "Installing kanidm-unixd & kanidm packages for version: ${version}"
+  apt-get install -y zsh \
+    "kanidm-unixd=${version}" \
+    "kanidm=${version}" \
+    "libpam-kanidm=${version}" \
+    "libnss-kanidm=${version}" \
+    || debug
+fi
+
+log "$GREEN" "Configuring kanidm-unixd..."
 if [[ "$LOCAL_IDM" == "true" ]]; then
-  log "Using local kanidmd, disabling verify_ca"
+  log "$GREEN" "Using local kanidmd, disabling verify_ca"
   sed -e '/^verify_ca/s/true/false/' -i /etc/kanidm/config
 fi
 sed "s_# *uri.*_uri = \"${IDM_URI}\"_" -i /etc/kanidm/config
 sed "s@# *pam_allowed_login_groups.*@pam_allowed_login_groups = \[\"${IDM_GROUP}\"\]@" -i /etc/kanidm/unixd
 
-log "Enabling debug logging for kanidm-unixd"
-mkdir -p /etc/systemd/system/kanidm-unixd.service.d
-cat << EOF > /etc/systemd/system/kanidm-unixd.service.d/env.conf
-[Service]
-Environment="KANIDM_DEBUG=true"
-EOF
-systemctl daemon-reload
 
-log "Restarting unixd"
+log "$GREEN" "Restarting unixd"
 systemctl restart kanidm-unixd.service || debug
 
-log "Configuring NSS"
+log "$GREEN" "Configuring NSS"
 sed -E 's/(passwd|group): (.*)/\1: \2 kanidm/' -i /etc/nsswitch.conf
 
-log "Configuring sshd"
+log "$GREEN" "Configuring sshd"
 
 cat << EOT >> /etc/ssh/sshd_config
 PubkeyAuthentication yes
@@ -154,9 +208,20 @@ LogLevel DEBUG1
 EOT
 systemctl restart ssh.service || debug
 
-log "Go test ssh login! Do a ^C here when you're done"
-log "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null localhost -p 2222"
-log "Or for direct ssh skipping unixd:"
-log "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
-log "Now following kanidm-unixd & ssh logs:"
-journalctl -f -u kanidm-unixd.service -u ssh.service
+log "$GREEN" "Running basic testing of results:"
+set -x
+getent passwd "$IDM_USER" || debug
+[[ -n $(/usr/sbin/kanidm_ssh_authorizedkeys "$IDM_USER") ]] || debug
+if [[ -x /usr/bin/kanidm_ssh_authorizedkeys_direct ]]; then
+  [[ -n $(/usr/bin/kanidm_ssh_authorizedkeys_direct --name anonymous "$IDM_USER") ]] || debug
+fi
+set +x
+
+
+log "$GREEN" "Go test ssh login! Do a ^C here when you're done"
+log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null localhost -p 2222"
+log "$GREEN" "Or for direct ssh skipping unixd:"
+log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
+log "$GREEN" "Now following kanidm-unixd, kanidm-unixd-tasks & ssh logs:"
+# We filter the logging slightly to drop multi-screen long event dumps 
+(journalctl -f --lines 50 -o short-iso-precise -u kanidm-unixd.service -u kanidm-unixd-tasks.service -u ssh.service | sed --unbuffered -E 's/(DebouncedEvent|EtcDb) .*/\[.. debugdump omitted for brevity ..\]/') || debug
