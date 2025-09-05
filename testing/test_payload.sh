@@ -12,6 +12,7 @@ IDM_URI="${IDM_URI?}"
 IDM_PORT="${IDM_PORT?}"
 IDM_USER="${IDM_USER?}"
 SSH_PUBLICKEY="${SSH_PUBLICKEY?}"
+PRETEND_TARGET="${PRETEND_TARGET?}"
 
 # Use a bit of color so it's easier to spot payload log vs. target output
 RED="\e[31m"
@@ -21,13 +22,16 @@ ENDCOLOR="\e[0m"
 function log(){
   color="$1"
   shift
-  >&2 echo -e "${color}${*}${ENDCOLOR}"
+  # Logging is echoed to stderr but also written to the target journald for timing related investigation.
+  echo -e "${color}${*}${ENDCOLOR}" | tee /dev/stderr | systemd-cat -t test-payload
 }
 
 function debug(){
   set +x
-	log "$RED" "Something went wrong, pausing for debug, to connect:"
+	log "$RED" "Something went wrong with ${KANIDM_VERSION}/${CATEGORY} on $PRETTY_NAME, pausing for debug, to connect:"
 	log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
+	log "$GREEN" "This may be helpful to investigate:"
+	log "$ENDCOLOR" journalctl -o short-iso-precise -e
 	sleep infinity
 }
 
@@ -48,6 +52,7 @@ function apt_update(){
 
 source /etc/os-release
 log "$GREEN" "Running test payload on $(uname -m) for ${PRETTY_NAME}"
+[[ "$PRETEND_TARGET" != "false" ]] && log "RED" ".. But we're pretending to be: '${PRETEND_TARGET}'"
 
 # Sometimes qemu isn't so great at networking, and it's real confusing if we don't explicitly fail on it
 test_uri="$IDM_URI"
@@ -64,12 +69,18 @@ export LC_ALL=C.UTF-8
 log "$GREEN" "Refreshing apt cache..."
 apt update || debug
 
+if [[ "$PRETEND_TARGET" == "false" ]]; then
+  TARGET="$VERSION_CODENAME"
+else
+  TARGET="$PRETEND_TARGET"
+fi
+
 if [[ "$USE_LIVE" == "true" ]]; then
   log "$GREEN" "Configuring live mirror..."
   set -x
   curl -s "https://kanidm.github.io/kanidm_ppa/kanidm_ppa.asc" > /etc/apt/trusted.gpg.d/kanidm_ppa.asc || debug
   curl -s "https://kanidm.github.io/kanidm_ppa/kanidm_ppa.list" \
-    | grep "$( ( . /etc/os-release && echo "$VERSION_CODENAME") )" \
+    | grep "$TARGET" \
     | grep "$CATEGORY" \
     > /etc/apt/sources.list.d/kanidm_ppa.list || debug
   set +x
@@ -86,7 +97,7 @@ else
     sed -e 's/\[.*\]/[trusted=yes]/' -i kanidm_ppa.list
   fi
   ls -la /etc/apt/sources.list.d/ || debug
-  sed "s/%MIRROR_PORT%/${MIRROR_PORT}/;s/%VERSION_CODENAME%/${VERSION_CODENAME}/;s/%CATEGORY%/${CATEGORY}/" kanidm_ppa.list > /etc/apt/sources.list.d/kanidm_ppa.list || debug
+  sed "s/%MIRROR_PORT%/${MIRROR_PORT}/;s/%VERSION_CODENAME%/${TARGET}/;s/%CATEGORY%/${CATEGORY}/" kanidm_ppa.list > /etc/apt/sources.list.d/kanidm_ppa.list || debug
   log "$GREEN" "Using snapshot mirror:"
   cat /etc/apt/sources.list.d/kanidm_ppa.list
   apt_update || debug

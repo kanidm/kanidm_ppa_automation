@@ -16,9 +16,10 @@ export IDM_USER="${IDM_USER:-$USER}"
 export IDM_PORT="${IDM_PORT:-58915}"  # Only relevant if IDM_URI=local
 export SSH_PUBLICKEY="${SSH_PUBLICKEY:-none}"  # Only relevant if IDM_URI=local
 export ALLOW_UNSIGNED="${ALLOW_UNSIGNED:-true}"  # Only relevant if USE_LIVE=false
-export OSARCH="${OSARCH:-$(dpkg --print-architecture)}" # cross-arch is in no way guaranteed to work
-export CPUARCH="${CPUARCH:-$(uname -m)}" # But if you insist, override both
+export OSARCH="${OSARCH:-$(dpkg --print-architecture)}"  # cross-arch is in no way guaranteed to work
+export CPUARCH="${CPUARCH:-$(uname -m)}"  # But if you insist, override both
 TEST_TARGETS="${TEST_TARGETS:-}"  # Single string space separated which targets to run. Default runs all
+export PRETEND_TARGET="${PRETEND_TARGET:-false}"  # Force all TEST_TARGETS to install packages from this target
 TEST_ROOT="$(readlink -f "$(dirname "$0")"/..)"
 
 if [[ "$IDM_URI" == "local" ]] && [[ "$SSH_PUBLICKEY" == "none" ]]; then
@@ -91,11 +92,13 @@ if [[ -n "$TEST_TARGETS" ]]; then
   IFS=" " read -r -a targets <<< "$TEST_TARGETS"
 else
   # Base set of targets: Latest LTS releases
-  targets=(bookworm noble)
+  targets=(trixie noble)
   # Additional targets won't work for nightly
   if [[ "$CATEGORY" != "nightly" ]]; then
     # Previous still supported LTS
-    targets+=(jammy)
+    targets+=(bookworm jammy)
+    # Interim releases
+    targets+=(plucky)
   fi
 fi
 log "$GREEN" "Full set of test targets:${ENDCOLOR} ${targets[*]}"
@@ -124,7 +127,7 @@ trap cleanup EXIT
 get_images "${targets[@]}"
 
 for target in "${targets[@]}"; do
-  log "$GREEN" "Testing target: ${ENDCOLOR} ${distro} ${CPUARCH}/${OSARCH} w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
+  log "$GREEN" "Testing target: ${ENDCOLOR} ${target} ${CPUARCH}/${OSARCH} w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
   run "$target"
 done
 log "$GREEN" "Done with all targets"
