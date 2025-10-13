@@ -1,11 +1,12 @@
 ---
 name: "Create apt repo"
 
-"on":  # TODO: This needs to also become a cron for the nightly function to make sense
+"on": # TODO: This needs to also become a cron for the nightly function to make sense
   push:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         category:
-            # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
+          # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
           - name: stable
             ref: v1.6.4
           - name: stable
@@ -28,7 +29,7 @@ jobs:
           # See comment for upstream support end-date after which we can drop it.
           - name: trixie
             image: debian:13
-            support: LTS     # 2030, June
+            support: LTS # 2030, June
           - name: bookworm
             image: debian:12
             support: old-LTS # 2028, June
@@ -37,7 +38,7 @@ jobs:
             support: old-LTS # 2027, April
           - name: noble
             image: ubuntu:24.04
-            support: LTS     # 2029, April
+            support: LTS # 2029, April
           - name: plucky
             image: ubuntu:25.04
             support: interim # 2026, January
@@ -47,11 +48,11 @@ jobs:
             runner-postfix: ""
           - name: aarch64-unknown-linux-gnu
             runner-postfix: "-arm"
-        exclude:  # Nightlies are only for latest LTS versions, exclude old-LTS & interim
-          - category: {name: nightly}
-            os: {support: old-LTS}
-          - category: {name: nightly}
-            os: {support: interim}
+        exclude: # Nightlies are only for latest LTS versions, exclude old-LTS & interim
+          - category: { name: nightly }
+            os: { support: old-LTS }
+          - category: { name: nightly }
+            os: { support: interim }
 
     runs-on: "ubuntu-24.04${{ matrix.target.runner-postfix }}"
     container: "${{ matrix.os.image }}"
@@ -60,8 +61,7 @@ jobs:
       # and if we checkout before having git, it's done through the REST API and missing .git
       - name: Get git
         shell: bash
-        run:
-          apt update && apt install -y git
+        run: apt update && apt install -y git
       # Step 0. Pick up the stable or nightly source
       - name: Checkout Kanidm
         uses: actions/checkout@v4
@@ -77,9 +77,9 @@ jobs:
       # Step 0.5. Get a bunch of dependencies
       - name: Install build dependencies
         run: |
-            platform/debian/kanidm_ppa_automation/scripts/install_ci_build_dependencies.sh
+          platform/debian/kanidm_ppa_automation/scripts/install_ci_build_dependencies.sh
       # Old Kanidm versions don't necessarily build on the stable Rust of today
-      # They may not build on the version defined at the time either, but not much we can do about that retroactively. 
+      # They may not build on the version defined at the time either, but not much we can do about that retroactively.
       - name: Determine Rust version
         run: |
           echo "RUST_VERSION=$(awk -F \" '/^rust-version/ {print $2}' Cargo.toml)" >> $GITHUB_ENV
@@ -139,7 +139,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: debs
-          merge-multiple: false  # Preserve which debs are from which matrix item
+          merge-multiple: false # Preserve which debs are from which matrix item
       - name: List packages
         run: |
           find $(pwd) -name '*.deb'
@@ -152,13 +152,13 @@ jobs:
           # TODO: Flip stable repo defs false -> true, _after_ we've done the first publish.
           # This enables the "import & extend" model.
           repos: |
-              trixie,stable,\"amd64,arm64\",false,debs/stable-*-trixie-*-unknown-linux-gnu/*.deb
-              bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
-              jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
-              noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
-              plucky,stable,\"amd64,arm64\",false,debs/stable-*-plucky-*-unknown-linux-gnu/*.deb
-              trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
-              noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb
+            trixie,stable,\"amd64,arm64\",false,debs/stable-*-trixie-*-unknown-linux-gnu/*.deb
+            bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
+            jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
+            noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
+            plucky,stable,\"amd64,arm64\",false,debs/stable-*-plucky-*-unknown-linux-gnu/*.deb
+            trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
+            noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
@@ -175,17 +175,17 @@ jobs:
         with:
           name: kanidm_ppa_snapshot
           path: snapshot
-          merge-multiple: true  # Flatten artifact name out
-      - name: Add README.md  # Pull in book chapter on PPA usage
+          merge-multiple: true # Flatten artifact name out
+      - name: Add README.md # Pull in book chapter on PPA usage
         shell: bash
         run: |
           curl https://raw.githubusercontent.com/kanidm/kanidm/refs/heads/master/book/src/packaging/ppa_packages.md > snapshot/README.md
-      - name: Import GPG key  # So we can sign the repository commit
+      - name: Import GPG key # So we can sign the repository commit
         uses: crazy-max/ghaction-import-gpg@v6
         env:
           # GitHub is a real ass about checking whether secrets are available or not.
           private_key_check: ${{ secrets.GPG_PRIVATE_KEY }}
-        if: env.private_key_check != ''  # Not present for PRs on purpose.
+        if: env.private_key_check != '' # Not present for PRs on purpose.
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
