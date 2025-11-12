@@ -12,9 +12,30 @@ Testing other architectures is even more Fun than packaging for them. The script
 
 ## Testing procedure
 
+### Preamble
 1. `cd` to the root of the `testing/` dir.
 1. Download a GHA repo snapshot artifact zip and place it in the current directory as `kanidm_ppa_snapshot.zip`. Or, check the settings
    further down to test in other ways without a snapshot.
+
+### Running the standard comformance test set the easy way
+Mise is used to run a standardized set of 24 test permutations.
+For the full test, repeat it on all supported architectures.
+Time taken will vary by system performance and how quickly you notice the
+next permutation is up for test. A typical example for the author
+if all cloud images are already cached and ample latency is factored in due
+to multitasking is around 40 minutes.
+
+1. Install Mise following these instructions: [Mise-en-place Getting Started](https://mise.jdx.dev/getting-started.html).
+1. Copy `mise.local.toml.example` to `mise.local.toml` and configure `IDM_URI` & `SSH_PUBLICKEY`.
+   They are explained better further down,
+1. Launch the full test run: `mise run test_all` (Use `mise run` to see available modules.)
+1. Wait for the test payload to finish setup, once it's tailing Kanidm debug logs it's ready.
+1. In another terminal, launch the test sript: `mise run test_now && kill $(pgrep -f StrictHostKeyChecking)`
+1. Either debug what went wrong with `mise run debug`,
+   or if all was fine the permutation was already killed by the example
+   above and the next one is launching, repeat the process.
+
+### Running arbitrary tests the hard way without Mise
 1. Run `IDM_URI=https://idm.example.com scripts/run-all.sh`, you may want to override other bits of env, see the bottom of this README.
    - At first your snapshot is unpacked and a mirror is launched with the contents listening on localhost.
    - You can view what's going on in the console of the qemu VM with `nc localhost 4321`, this is only necessary if something goes horribly wrong.

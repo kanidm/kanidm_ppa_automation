@@ -1,0 +1,7 @@
+[env]
+# Make a copy of this file to mise.local.toml
+# and then set these variables:
+
+IDM_URI = "https://idm.example.com"
+SSH_PUBLICKEY = "ssh-ed25519 AAAAfoobarbaz you@localhost"
+#IDM_GROUP = "posix_login"
