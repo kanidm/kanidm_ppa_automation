@@ -171,7 +171,7 @@ EOF
 done
 
 log "$GREEN" "Installing debug tools in-case you need them"
-apt-get install -y strace
+apt-get install -y strace pamtester
 
 if [[ "$USE_DEBDIR" != "false" ]]; then
   # apt-get allows installing debs and helps resolve dependencies
@@ -198,7 +198,10 @@ if [[ "$LOCAL_IDM" == "true" ]]; then
   log "$GREEN" "Using local kanidmd, disabling verify_ca"
   sed -e '/^verify_ca/s/true/false/' -i /etc/kanidm/config
 fi
+# Set Kanidm level uri
 sed "s_# *uri.*_uri = \"${IDM_URI}\"_" -i /etc/kanidm/config
+# Enable kanidm based posix login
+sed "/^# *\[kanidm\]/s/[# ]//g" -i /etc/kanidm/unixd
 sed "s@# *pam_allowed_login_groups.*@pam_allowed_login_groups = \[\"${IDM_GROUP}\"\]@" -i /etc/kanidm/unixd
 
 
@@ -221,11 +224,16 @@ systemctl restart ssh.service || debug
 
 log "$GREEN" "Running basic testing of results:"
 set -x
-getent passwd "$IDM_USER" || debug
-[[ -n $(/usr/sbin/kanidm_ssh_authorizedkeys "$IDM_USER") ]] || debug
+# This will work as long as kanidmd will respond
 if [[ -x /usr/bin/kanidm_ssh_authorizedkeys_direct ]]; then
   [[ -n $(/usr/bin/kanidm_ssh_authorizedkeys_direct --name anonymous "$IDM_USER") ]] || debug
 fi
+# This requires unixd to be configured for kanidm use
+[[ -n $(/usr/sbin/kanidm_ssh_authorizedkeys "$IDM_USER") ]] || debug
+# This also requires NSS to be configured for kanidm use
+getent passwd "$IDM_USER" || debug
+# This also requires PAM to be functional
+pamtester -v login "$IDM_USER" open_session || debug
 set +x
 
 
