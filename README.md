@@ -12,7 +12,7 @@ For instructions how to use this repo for manual builds, see the book at:
 
 ## Release process
 
-To cut a new release after upstream releases perform the following steps:
+To cut a new release after upstream does, perform the following steps:
 
 1. Modify `.github/workflows/create-apt-repo.yml`:
    - Update the matrix category map to bump versions, prefer a tag `ref`.
