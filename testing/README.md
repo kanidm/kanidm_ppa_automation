@@ -21,7 +21,7 @@ Testing other architectures is even more Fun than packaging for them. The script
 
 ### Running the standard comformance test set the easy way
 
-Mise is used to run a standardized set of 24 test permutations.
+[Mise](https://mise.jdx.dev) is used to run a standardized set of 24 test permutations.
 For the full test, repeat it on all supported architectures.
 Time taken will vary by system performance and how quickly you notice the
 next permutation is up for test. A typical example for the author
