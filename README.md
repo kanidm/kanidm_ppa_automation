@@ -42,7 +42,7 @@ To cut a new release after upstream does, perform the following steps:
      working copy as `testing/kanidm_ppa_snapshot.zip`
    - Follow the testing guidance to run through all permutations:
      [Testing procedure](/testing/README.md#testing-procedure). Using
-     the "easy way" guidance with the help of [Mise]() is highly encouraged
+     the "easy way" guidance with the help of [Mise](https://mise.jdx.dev/) is highly encouraged
      for the sake of consistency, it's easy to otherwise miss a portion of testing.
      Please note that you need to repeat the test suite on both
      x86_64 and arm64. Using real non-emulated hardware is highly encouraged
