@@ -20,6 +20,7 @@ export OSARCH="${OSARCH:-$(dpkg --print-architecture)}"  # cross-arch is in no w
 export CPUARCH="${CPUARCH:-$(uname -m)}"  # But if you insist, override both
 TEST_TARGETS="${TEST_TARGETS:-}"  # Single string space separated which targets to run. Default runs all
 export PRETEND_TARGET="${PRETEND_TARGET:-false}"  # Force all TEST_TARGETS to install packages from this target
+SUCCESS_WAIT="${SUCCESS_WAIT:-true}"  # Ask for confirmation before continuing to the next test after a success
 TEST_ROOT="$(readlink -f "$(dirname "$0")"/..)"
 
 if [[ "$IDM_URI" == "local" ]] && [[ "$SSH_PUBLICKEY" == "none" ]]; then
@@ -56,7 +57,7 @@ function prompt(){
 function run(){
 	distro="$1"
 	scripts/launch-one.sh "$CPUARCH" "images/$(basename "${!distro}")"  || exit 1
-	prompt
+	[[ "$SUCCESS_WAIT" == "true" ]] && prompt
 	sleep 2s  # Wait for qemu to release ports
 }
 
@@ -134,3 +135,4 @@ log "$GREEN" "Done with all targets"
 
 set +e  # Allow cleanup to fail
 cleanup || exit 0
+exit 0
