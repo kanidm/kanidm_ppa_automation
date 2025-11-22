@@ -12,6 +12,7 @@ export CATEGORY="${CATEGORY:-stable}"
 export USE_LIVE="${USE_LIVE:-false}"
 export USE_DEBDIR="${USE_DEBDIR:-false}"  # If not false, expected to be a directory
 export KANIDM_VERSION="${KANIDM_VERSION:-*}"  # * default picks latest
+export KANIDM_UPGRADE="${KANIDM_UPGRADE:-false}"  # To test upgrades: set KANIDM_VERSION to an old version and this to true
 export IDM_USER="${IDM_USER:-$USER}"
 export IDM_PORT="${IDM_PORT:-58915}"  # Only relevant if IDM_URI=local
 export SSH_PUBLICKEY="${SSH_PUBLICKEY:-none}"  # Only relevant if IDM_URI=local
@@ -119,6 +120,7 @@ if [[ "$USE_LIVE" == "false" && "$USE_DEBDIR" == "false" ]]; then
 fi
 
 modestring="mirror snapshot, version: ${KANIDM_VERSION}/${CATEGORY}"
+[[ "$KANIDM_UPGRADE" != "false" ]] && modestring+=", upgrading to latest"
 [[ "$USE_DEBDIR" != "false" ]] && modestring="debs from ${USE_DEBDIR}"
 [[ "$USE_LIVE" == "true" ]] && modestring="live mirror, version: ${KANIDM_VERSION}/${CATEGORY}"
 

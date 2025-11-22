@@ -121,6 +121,7 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	IDM_USER="$IDM_USER" \
 	SSH_PUBLICKEY="\"$SSH_PUBLICKEY\"" \
 	PRETEND_TARGET="\"$PRETEND_TARGET\"" \
+	KANIDM_UPGRADE="\"$KANIDM_UPGRADE\"" \
 	./test_payload.sh
 set +x
 

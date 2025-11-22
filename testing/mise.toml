@@ -54,3 +54,20 @@ SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 KANIDM_VERSION = "1.7"
 IDM_URI = "local"
+
+[tasks."test:oldstable-upgrade:ext"]
+run = "scripts/run-all.sh"
+[tasks."test:oldstable-upgrade:ext".env]
+SUCCESS_WAIT = "false"
+CATEGORY = "stable"
+KANIDM_VERSION = "1.7"
+KANIDM_UPGRADE = "true"
+
+[tasks."test:oldstable-upgrade:self"]
+run = "scripts/run-all.sh"
+[tasks."test:oldstable-upgrade:self".env]
+SUCCESS_WAIT = "false"
+CATEGORY = "stable"
+KANIDM_VERSION = "1.7"
+KANIDM_UPGRADE = "true"
+IDM_URI = "local"

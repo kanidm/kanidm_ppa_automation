@@ -13,6 +13,7 @@ IDM_PORT="${IDM_PORT?}"
 IDM_USER="${IDM_USER?}"
 SSH_PUBLICKEY="${SSH_PUBLICKEY?}"
 PRETEND_TARGET="${PRETEND_TARGET?}"
+KANIDM_UPGRADE="${KANIDM_UPGRADE?}"
 
 # Use a bit of color so it's easier to spot payload log vs. target output
 RED="\e[31m"
@@ -42,12 +43,29 @@ function dyn_run(){
     "$@"
 }
 
-# A much quicker & repeatable targeted apt update, we only care about our mirror
+# A much quicker & repeatable targeted apt update for when we only care about our mirror
 function apt_update(){
   apt-get update -y \
     -o Dir::Etc::sourcelist="sources.list.d/kanidm_ppa.list" \
     -o Dir::Etc::sourceparts="-" \
     -o APT::Get::List-Cleanup="0"
+}
+
+function basic_test(){
+  log "$GREEN" "Running basic testing of results for '$KANIDM_VERSION':"
+  set -x
+  kanidm version
+  # This will work as long as kanidmd will respond
+  if [[ -x /usr/bin/kanidm_ssh_authorizedkeys_direct ]]; then
+    [[ -n $(/usr/bin/kanidm_ssh_authorizedkeys_direct --name anonymous "$IDM_USER") ]] || debug
+  fi
+  # This requires unixd to be configured for kanidm use
+  [[ -n $(/usr/sbin/kanidm_ssh_authorizedkeys "$IDM_USER") ]] || debug
+  # This also requires NSS to be configured for kanidm use
+  getent passwd "$IDM_USER" || debug
+  # This also requires PAM to be functional
+  pamtester -v login "$IDM_USER" open_session || debug
+  set +x
 }
 
 source /etc/os-release
@@ -64,10 +82,20 @@ curl -s "$test_uri" > /dev/null || debug
 export DEBIAN_FRONTEND=noninteractive
 export LC_CTYPE=C.UTF-8
 export LC_ALL=C.UTF-8
+# Don't ask about configs on upgrade, users will say N anyway so test for that
+cat <<EOF >> /etc/apt/apt.conf.d/10dpkg-options
+Dpkg::Options {
+  "--force-confdef";
+  "--force-confold";
+}
+EOF
+# Make various testing steps quieter
+[[ -f /etc/motd ]] && rm /etc/motd # Debian
+[[ -d /etc/update-motd.d/ ]] && rm -r /etc/update-motd.d/ # Ubuntu
 
 # Cloud images come with an empty cache and we need dependencies
 log "$GREEN" "Refreshing apt cache..."
-apt update || debug
+apt-get update || debug
 
 if [[ "$PRETEND_TARGET" == "false" ]]; then
   TARGET="$VERSION_CODENAME"
@@ -222,19 +250,15 @@ LogLevel DEBUG1
 EOT
 systemctl restart ssh.service || debug
 
-log "$GREEN" "Running basic testing of results:"
-set -x
-# This will work as long as kanidmd will respond
-if [[ -x /usr/bin/kanidm_ssh_authorizedkeys_direct ]]; then
-  [[ -n $(/usr/bin/kanidm_ssh_authorizedkeys_direct --name anonymous "$IDM_USER") ]] || debug
+## All done with setup, run tests
+basic_test
+
+## If given a newer version to upgrade to for testing oldstable -> stable migrations.
+if [[ "$KANIDM_UPGRADE" != "false" ]]; then
+  log "$GREEN" "Performing upgrade to latest Kanidm packages"
+  apt-get install -y --only-upgrade '*kanidm*'
+  basic_test
 fi
-# This requires unixd to be configured for kanidm use
-[[ -n $(/usr/sbin/kanidm_ssh_authorizedkeys "$IDM_USER") ]] || debug
-# This also requires NSS to be configured for kanidm use
-getent passwd "$IDM_USER" || debug
-# This also requires PAM to be functional
-pamtester -v login "$IDM_USER" open_session || debug
-set +x
 
 
 log "$GREEN" "Go test ssh login! Do a ^C here when you're done"
