@@ -110,6 +110,7 @@ log "$GREEN" "Launching test payload..."
 set +e
 set -x
 ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
+	MISE_TASK_NAME="$MISE_TASK_NAME" \
 	IDM_URI="$IDM_URI" \
 	IDM_GROUP="$IDM_GROUP" \
 	MIRROR_PORT="$MIRROR_PORT" \
@@ -121,6 +122,7 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	IDM_USER="$IDM_USER" \
 	SSH_PUBLICKEY="\"$SSH_PUBLICKEY\"" \
 	PRETEND_TARGET="\"$PRETEND_TARGET\"" \
+	KANIDM_UPGRADE="\"$KANIDM_UPGRADE\"" \
 	./test_payload.sh
 set +x
 

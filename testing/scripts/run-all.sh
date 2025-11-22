@@ -12,6 +12,7 @@ export CATEGORY="${CATEGORY:-stable}"
 export USE_LIVE="${USE_LIVE:-false}"
 export USE_DEBDIR="${USE_DEBDIR:-false}"  # If not false, expected to be a directory
 export KANIDM_VERSION="${KANIDM_VERSION:-*}"  # * default picks latest
+export KANIDM_UPGRADE="${KANIDM_UPGRADE:-false}"  # To test upgrades: set KANIDM_VERSION to an old version and this to true
 export IDM_USER="${IDM_USER:-$USER}"
 export IDM_PORT="${IDM_PORT:-58915}"  # Only relevant if IDM_URI=local
 export SSH_PUBLICKEY="${SSH_PUBLICKEY:-none}"  # Only relevant if IDM_URI=local
@@ -22,6 +23,7 @@ TEST_TARGETS="${TEST_TARGETS:-}"  # Single string space separated which targets 
 export PRETEND_TARGET="${PRETEND_TARGET:-false}"  # Force all TEST_TARGETS to install packages from this target
 SUCCESS_WAIT="${SUCCESS_WAIT:-true}"  # Ask for confirmation before continuing to the next test after a success
 TEST_ROOT="$(readlink -f "$(dirname "$0")"/..)"
+export MISE_TASK_NAME="${MISE_TASK_NAME:-custom}"  # Set by Mise when running defined test sets
 
 if [[ "$IDM_URI" == "local" ]] && [[ "$SSH_PUBLICKEY" == "none" ]]; then
   >&2 echo "SSH_PUBLICKEY must be set for IDM_URI=local"
@@ -119,6 +121,7 @@ if [[ "$USE_LIVE" == "false" && "$USE_DEBDIR" == "false" ]]; then
 fi
 
 modestring="mirror snapshot, version: ${KANIDM_VERSION}/${CATEGORY}"
+[[ "$KANIDM_UPGRADE" != "false" ]] && modestring+=", upgrading to latest"
 [[ "$USE_DEBDIR" != "false" ]] && modestring="debs from ${USE_DEBDIR}"
 [[ "$USE_LIVE" == "true" ]] && modestring="live mirror, version: ${KANIDM_VERSION}/${CATEGORY}"
 
@@ -128,8 +131,10 @@ trap cleanup EXIT
 get_images "${targets[@]}"
 
 for target in "${targets[@]}"; do
-  log "$GREEN" "Testing target: ${ENDCOLOR} ${target} ${CPUARCH}/${OSARCH} w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
+  TEST_ID="${MISE_TASK_NAME}/${target}/${CPUARCH}"
+  log "$GREEN" "Testing target: ${ENDCOLOR} '${TEST_ID}' w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
   run "$target"
+  log "$GREEN" "Done with ${TEST_ID}"
 done
 log "$GREEN" "Done with all targets"
 
