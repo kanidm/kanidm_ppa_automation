@@ -14,6 +14,8 @@ IDM_USER="${IDM_USER?}"
 SSH_PUBLICKEY="${SSH_PUBLICKEY?}"
 PRETEND_TARGET="${PRETEND_TARGET?}"
 KANIDM_UPGRADE="${KANIDM_UPGRADE?}"
+MISE_TASK_NAME="${MISE_TASK_NAME?}"
+CPUARCH="$(uname -m)"
 
 # Use a bit of color so it's easier to spot payload log vs. target output
 RED="\e[31m"
@@ -29,7 +31,7 @@ function log(){
 
 function debug(){
   set +x
-	log "$RED" "Something went wrong with ${KANIDM_VERSION}/${CATEGORY} on $PRETTY_NAME, pausing for debug, to connect:"
+	log "$RED" "Something went wrong with '${TEST_ID}', pausing for debug, to connect:"
 	log "$ENDCOLOR" "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519"
 	log "$GREEN" "This may be helpful to investigate:"
 	log "$ENDCOLOR" journalctl -o short-iso-precise -e
@@ -52,7 +54,7 @@ function apt_update(){
 }
 
 function basic_test(){
-  log "$GREEN" "Running basic testing of results for '$KANIDM_VERSION':"
+  log "$GREEN" "Running basic testing of results for '${TEST_ID}':"
   set -x
   kanidm version
   # This will work as long as kanidmd will respond
@@ -69,14 +71,19 @@ function basic_test(){
 }
 
 source /etc/os-release
-log "$GREEN" "Running test payload on $(uname -m) for ${PRETTY_NAME}"
+export TEST_ID="${MISE_TASK_NAME}/${VERSION_CODENAME}/${CPUARCH}"
+log "$GREEN" "Running test payload '${TEST_ID}'"
 [[ "$PRETEND_TARGET" != "false" ]] && log "RED" ".. But we're pretending to be: '${PRETEND_TARGET}'"
+
+log "$GREEN" "Storing test env to /etc/test_env"
+export -p | grep -E "(TEST|IDM|KANIDM)_" > /etc/test_env
+echo 'source /etc/test_env' >> /etc/profile
 
 # Sometimes qemu isn't so great at networking, and it's real confusing if we don't explicitly fail on it
 test_uri="$IDM_URI"
 [[ "$IDM_URI" == "local" ]] && test_uri="https://github.com"
 log "$GREEN" "Testing network connectivity to ${test_uri} ..."
-curl -s "$test_uri" > /dev/null || debug
+curl --retry 10 --retry-all-errors --no-progress-meter "$test_uri" > /dev/null || debug
 
 # Make apt shut up about various things to see relevant output better
 export DEBIAN_FRONTEND=noninteractive
@@ -241,7 +248,7 @@ sed -E 's/(passwd|group): (.*)/\1: \2 kanidm/' -i /etc/nsswitch.conf
 
 log "$GREEN" "Configuring sshd"
 
-cat << EOT >> /etc/ssh/sshd_config
+cat << EOT > /etc/ssh/sshd_config
 PubkeyAuthentication yes
 UsePAM yes
 AuthorizedKeysCommand /usr/sbin/kanidm_ssh_authorizedkeys %u

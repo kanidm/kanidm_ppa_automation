@@ -23,6 +23,7 @@ TEST_TARGETS="${TEST_TARGETS:-}"  # Single string space separated which targets 
 export PRETEND_TARGET="${PRETEND_TARGET:-false}"  # Force all TEST_TARGETS to install packages from this target
 SUCCESS_WAIT="${SUCCESS_WAIT:-true}"  # Ask for confirmation before continuing to the next test after a success
 TEST_ROOT="$(readlink -f "$(dirname "$0")"/..)"
+export MISE_TASK_NAME="${MISE_TASK_NAME:-custom}"  # Set by Mise when running defined test sets
 
 if [[ "$IDM_URI" == "local" ]] && [[ "$SSH_PUBLICKEY" == "none" ]]; then
   >&2 echo "SSH_PUBLICKEY must be set for IDM_URI=local"
@@ -130,8 +131,10 @@ trap cleanup EXIT
 get_images "${targets[@]}"
 
 for target in "${targets[@]}"; do
-  log "$GREEN" "Testing target: ${ENDCOLOR} ${target} ${CPUARCH}/${OSARCH} w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
+  TEST_ID="${MISE_TASK_NAME}/${target}/${CPUARCH}"
+  log "$GREEN" "Testing target: ${ENDCOLOR} '${TEST_ID}' w/ IDM_URI=${IDM_URI}, installing from: ${modestring}"
   run "$target"
+  log "$GREEN" "Done with ${TEST_ID}"
 done
 log "$GREEN" "Done with all targets"
 

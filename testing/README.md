@@ -37,6 +37,7 @@ to multitasking is around 40 minutes.
 1. Either debug what went wrong with `mise run debug`,
    or if all was fine the permutation was already killed by the example
    above and the next one is launching, repeat the process.
+1. You can retry individual failing combinations as well: `TEST_TARGETS=trixie mise run test:stable:ext`
 
 ### Running arbitrary tests the hard way without Mise
 

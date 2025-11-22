@@ -110,6 +110,7 @@ log "$GREEN" "Launching test payload..."
 set +e
 set -x
 ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
+	MISE_TASK_NAME="$MISE_TASK_NAME" \
 	IDM_URI="$IDM_URI" \
 	IDM_GROUP="$IDM_GROUP" \
 	MIRROR_PORT="$MIRROR_PORT" \
