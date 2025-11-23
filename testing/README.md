@@ -1,7 +1,7 @@
 # QEMU based integration testing
 
 > This place is not a place of honor... no highly esteemed deed is commemorated here... nothing valued is here.
-What is here was dangerous and repulsive to us. This message is a warning about danger.
+> What is here was dangerous and repulsive to us. This message is a warning about danger.
 
 Testing other architectures is even more Fun than packaging for them. The scripts here make it plausible, if not exactly great.
 
@@ -21,7 +21,7 @@ Testing other architectures is even more Fun than packaging for them. The script
 
 ### Running the standard comformance test set the easy way
 
-[Mise](https://mise.jdx.dev) is used to run a standardized set of 24 test permutations.
+[Mise](https://mise.jdx.dev) is used to run a standardized set of dozens of test permutations.
 For the full test, repeat it on all supported architectures.
 Time taken will vary by system performance and how quickly you notice the
 next permutation is up for test. A typical example for the author
@@ -37,6 +37,7 @@ to multitasking is around 40 minutes.
 1. Either debug what went wrong with `mise run debug`,
    or if all was fine the permutation was already killed by the example
    above and the next one is launching, repeat the process.
+1. You can retry individual failing combinations as well: `TEST_TARGETS=trixie mise run test:stable:ext`
 
 ### Running arbitrary tests the hard way without Mise
 
@@ -62,7 +63,7 @@ to multitasking is around 40 minutes.
     -i ssh_ed25519 root@localhost -p 2222
    ```
 
-1. Once  happy with the permutation, hit `^C` in the original terminal to terminate the permutation. Hit `Enter` to continue to the next one.
+1. Once happy with the permutation, hit `^C` in the original terminal to terminate the permutation. Hit `Enter` to continue to the next one.
 1. Iterate until your willpower has crumbled or you reach the end of the target list.
 
 ### Known issues
@@ -83,9 +84,11 @@ build from GHA, though less valuable for proving the PPA itself will be function
 
 - `CATEGORY` - Which mirror category to install, `stable` (default) or `nightly`.
 - `KANIDM_VERSION` - Version prefix to install from the category. `1.4` would install the latest available 1.4, say 1.4.6. The default is latest.
+- `KANIDM_UPGRADE` - Set to `true` to test an upgrade within a `$CATEGORY` from `$KANIDM_VERSION` to
+  the latest available.
 - `USE_LIVE` - Use the live Kanidm PPA mirror instead of a local snapshot. Default is `false`.
 - `USE_DEBDIR` - Instead of a mirror snapshot (the default) or the live mirror, install deb
-packages from the dir given with this option.
+  packages from the dir given with this option.
 - `TEST_TARGETS` - Space separated list of distro targets to run. Defaults to running all applicable
   targets. See `lib/targets.sh` for valid targets.
 - `ALLOW_UNSIGNED` - Accept an unsigned kanidm_ppa_snapshot.zip. Defaults to `true` but raises
@@ -97,13 +100,14 @@ packages from the dir given with this option.
   Set to `local` to spin up kanidmd within the VM and use that. This is not yet supported in all versions.
 - `IDM_GROUP` - A posix enabled group on the above server to gate unixd authentication.
 - `IDM_USER` - User expected to be able to log in, defaults to `$USER`.
-- `SSH_PUBLICKEY` - Only relevant if `IDM_URI=local`. The public key to enable for SSH login.
+- `SSH_PUBLICKEY` - The public key of `IDM_USER`. Used to seed a local kanidmd and test ssh
+  integration in all scenarios.
 
 #### Port settings
 
 All ports are bound only on localhost, so should normally not interfere with other activity.
 
 - `MIRROR_PORT` - 31625 - Port to use for the snapshot mirror httpd.
-- `SSH_PORT`    - 2222  - Port for the VM SSHD to listen on.
-- `TELNET_PORT` - 4321  - Port for the VM console to listen on.
-- `IDM_PORT` - 58915  - Port for the VM internal kanidmd. Only relevant if `IDM_URI=local`.
+- `SSH_PORT` - 2222 - Port for the VM SSHD to listen on.
+- `TELNET_PORT` - 4321 - Port for the VM console to listen on.
+- `IDM_PORT` - 58915 - Port for the VM internal kanidmd. Only relevant if `IDM_URI=local`.

@@ -8,11 +8,34 @@ jobs = 1
 [tasks.test_all]
 depends = ["test:*"]
 
-[tasks.test_now]
-run = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null localhost -p 2222 "uname -a && cat /etc/os-release && kanidm login -D anonymous && kanidm self whoami && kanidm version"'
+[tasks.test_shell]
+run = '''
+  ssh -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
+      -o LogLevel=ERROR \
+      localhost -p 2222
+  '''
 
+[tasks.test_now]
+run = '''
+  ssh -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
+      -o LogLevel=ERROR \
+      localhost -p 2222 \
+    "source /etc/test_env && \
+    source /etc/os-release && \
+    echo \"TEST_ID=\${TEST_ID}\" && \
+    getent passwd \$USER && \
+    kanidm login -D anonymous && \
+    kanidm version && \
+    /sbin/kanidm_unixd --version"
+  '''
 [tasks.debug]
-run = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@localhost -p 2222 -i ssh_ed25519'
+run = '''
+  ssh -o StrictHostKeyChecking=no \
+      -o UserKnownHostsFile=/dev/null \
+      root@localhost -p 2222 -i ssh_ed25519'
+'''
 
 [tasks."test:stable:ext"]
 run = "scripts/run-all.sh"
@@ -53,4 +76,21 @@ run = "scripts/run-all.sh"
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 KANIDM_VERSION = "1.7"
+IDM_URI = "local"
+
+[tasks."test:oldstable-upgrade:ext"]
+run = "scripts/run-all.sh"
+[tasks."test:oldstable-upgrade:ext".env]
+SUCCESS_WAIT = "false"
+CATEGORY = "stable"
+KANIDM_VERSION = "1.7"
+KANIDM_UPGRADE = "true"
+
+[tasks."test:oldstable-upgrade:self"]
+run = "scripts/run-all.sh"
+[tasks."test:oldstable-upgrade:self".env]
+SUCCESS_WAIT = "false"
+CATEGORY = "stable"
+KANIDM_VERSION = "1.7"
+KANIDM_UPGRADE = "true"
 IDM_URI = "local"
