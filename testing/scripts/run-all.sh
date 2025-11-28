@@ -101,7 +101,7 @@ else
     # Previous still supported LTS
     targets+=(bookworm jammy)
     # Interim releases
-    targets+=(plucky)
+    targets+=(plucky questing)
   fi
 fi
 log "$GREEN" "Full set of test targets:${ENDCOLOR} ${targets[*]}"
