@@ -21,6 +21,8 @@ run = '''
   ssh -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
       -o LogLevel=ERROR \
+      -o PasswordAuthentication=no \
+      -o BatchMode=yes \
       localhost -p 2222 \
     "source /etc/test_env && \
     source /etc/os-release && \
