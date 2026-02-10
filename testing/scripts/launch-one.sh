@@ -66,8 +66,7 @@ case "$arch" in
 		;;
 esac
 
-
-
+SERIAL_CONFIG=(-serial "$SERIAL_CONFIG")
 SSH_OPTS=(-i ssh_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 
 set +e  # ssh will be failing on purpose
@@ -89,7 +88,7 @@ while true; do
   	-netdev id=net00,type=user,hostfwd=tcp::"${SSH_PORT}"-:22 \
   	-device virtio-net-pci,netdev=net00 \
   	-monitor unix:qemu-monitor.socket,server,nowait \
-  	-serial "telnet:localhost:${TELNET_PORT},server,nowait" \
+  	"${SERIAL_CONFIG[@]}" \
   	-display none -daemonize -pidfile qemu.pid || exit 1
 set +x
 	while [[  "$retry" -le "${QEMU_PATIENCE_LIMIT?}" ]]; do
