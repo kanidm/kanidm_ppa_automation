@@ -178,7 +178,12 @@ if [[ "$IDM_URI" == "local" ]]; then
   sleep 5s
   
   log "$GREEN" "Seeding kanidmd for posix login..."
-  password="$(kanidmd recover-account idm_admin -o json | grep password | jq .password | tr -d \")"
+  # The CLI behavior changes significantly with 1.9.0
+  if dpkg --compare-versions "$(kanidmd version | awk '{ print $2 }')" lt "1.9.0"; then
+    password="$(kanidmd recover-account idm_admin -o json | grep password | jq -r .password)"
+  else
+    password="$(kanidmd scripting recover-account idm_admin | jq -r .output)"
+  fi
   # kanidm the cli tool doesn't ship with a default config, and unixd does.
   # So instead of poking at that whole mess, we just use a temporary config.
   mkdir -p /etc/kanidm
