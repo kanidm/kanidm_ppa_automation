@@ -6,9 +6,11 @@ SSH_PUBLICKEY = { required = "copy mise.local.toml.example to mise.local.toml an
 jobs = 1
 
 [tasks.test_all]
-depends = ["test:*"]
+depends = ["testcase:*"]
+description = "Run the entire target list, pausing to allow testing every permutation"
 
 [tasks.test_shell]
+description = "Connect to a running test with for manual checks"
 run = '''
   ssh -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
@@ -17,6 +19,7 @@ run = '''
   '''
 
 [tasks.test_now]
+description = "Connect to a running test and run standard checks"
 run = '''
   ssh -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
@@ -32,65 +35,67 @@ run = '''
     kanidm version && \
     /sbin/kanidm_unixd --version"
   '''
+
 [tasks.debug]
+description = "Connect to a running test as root bypassing Kanidm auth"
 run = '''
   ssh -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
-      root@localhost -p 2222 -i ssh_ed25519'
+      root@localhost -p 2222 -i ssh_ed25519
 '''
 
-[tasks."test:stable:ext"]
+[tasks."testcase:stable:ext"]
 run = "scripts/run-all.sh"
-[tasks."test:stable:ext".env]
+[tasks."testcase:stable:ext".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 
-[tasks."test:stable:self"]
+[tasks."testcase:stable:self"]
 run = "scripts/run-all.sh"
-[tasks."test:stable:self".env]
+[tasks."testcase:stable:self".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 IDM_URI = "local"
 
-[tasks."test:nightly:ext"]
+[tasks."testcase:nightly:ext"]
 run = "scripts/run-all.sh"
-[tasks."test:nightly:ext".env]
+[tasks."testcase:nightly:ext".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "nightly"
 
-[tasks."test:nightly:self"]
+[tasks."testcase:nightly:self"]
 run = "scripts/run-all.sh"
-[tasks."test:nightly:self".env]
+[tasks."testcase:nightly:self".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "nightly"
 IDM_URI = "local"
 
-[tasks."test:oldstable:ext"]
+[tasks."testcase:oldstable:ext"]
 run = "scripts/run-all.sh"
-[tasks."test:oldstable:ext".env]
+[tasks."testcase:oldstable:ext".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 KANIDM_VERSION = "1.7"
 
-[tasks."test:oldstable:self"]
+[tasks."testcase:oldstable:self"]
 run = "scripts/run-all.sh"
-[tasks."test:oldstable:self".env]
+[tasks."testcase:oldstable:self".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 KANIDM_VERSION = "1.7"
 IDM_URI = "local"
 
-[tasks."test:oldstable-upgrade:ext"]
+[tasks."testcase:oldstable-upgrade:ext"]
 run = "scripts/run-all.sh"
-[tasks."test:oldstable-upgrade:ext".env]
+[tasks."testcase:oldstable-upgrade:ext".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 KANIDM_VERSION = "1.7"
 KANIDM_UPGRADE = "true"
 
-[tasks."test:oldstable-upgrade:self"]
+[tasks."testcase:oldstable-upgrade:self"]
 run = "scripts/run-all.sh"
-[tasks."test:oldstable-upgrade:self".env]
+[tasks."testcase:oldstable-upgrade:self".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
 KANIDM_VERSION = "1.7"

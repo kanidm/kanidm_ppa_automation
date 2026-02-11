@@ -22,7 +22,7 @@ jobs:
           - name: stable
             ref: v1.7.4
           - name: stable
-            ref: v1.8.5
+            ref: v1.8.6
           - name: nightly
             ref: master
         os:
@@ -39,9 +39,6 @@ jobs:
           - name: noble
             image: ubuntu:24.04
             support: LTS # 2029, April
-          - name: plucky
-            image: ubuntu:25.04
-            support: interim # 2026, January
           - name: questing
             image: ubuntu:25.10
             support: interim # 2026, July
@@ -159,7 +156,6 @@ jobs:
             bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
             jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
-            plucky,stable,\"amd64,arm64\",false,debs/stable-*-plucky-*-unknown-linux-gnu/*.deb
             questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
             trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
             noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb

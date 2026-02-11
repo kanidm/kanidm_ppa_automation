@@ -32,7 +32,11 @@ case "$arch" in
 			CPU=max
 			ACCEL=(-accel "tcg,thread=multi")
 		fi
-		EFI=/usr/share/OVMF/OVMF_CODE.fd
+		EFI=/usr/share/OVMF/OVMF_CODE_4M.fd
+		if [[ ! -a "$EFI" ]]; then
+			>&2 echo "EFI image is missing: ${EFI}. You are likely missing the 'ovmf' package or have an incompatible version."
+			exit 1
+		fi
 		VARSTORE=()
 		DRIVE=(-drive "if=virtio,format=qcow2,file=${img}")
 		;;
