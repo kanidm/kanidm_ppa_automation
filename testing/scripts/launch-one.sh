@@ -33,7 +33,7 @@ case "$arch" in
 			ACCEL=(-accel "tcg,thread=multi")
 		fi
 		EFI=/usr/share/OVMF/OVMF_CODE_4M.fd
-		if [[ ! -a "$EFI" ]]; then
+		if [[ ! -e "$EFI" ]]; then
 			>&2 echo "EFI image is missing: ${EFI}. You are likely missing the 'ovmf' package or have an incompatible version."
 			exit 1
 		fi
@@ -67,32 +67,42 @@ case "$arch" in
 esac
 
 
-log "$GREEN" "Booting $arch $MACHINE with $EFI from $img"
-set -x
-"qemu-system-$arch"  \
-  -machine type="${MACHINE}" -m 1024 \
-  -cpu ${CPU} -smp 4 \
-  "${ACCEL[@]}" \
-  -snapshot \
-  -drive "if=pflash,format=raw,file=${EFI},readonly=on" \
-  "${VARSTORE[@]}" \
-  "${DRIVE[@]}" \
-  -drive if=virtio,format=raw,file=seed.img \
-  -netdev id=net00,type=user,hostfwd=tcp::"${SSH_PORT}"-:22 \
-  -device virtio-net-pci,netdev=net00 \
-  -monitor unix:qemu-monitor.socket,server,nowait \
-  -serial "telnet:localhost:${TELNET_PORT},server,nowait" \
-  -display none -daemonize -pidfile qemu.pid || exit 1
-set +x
 
 SSH_OPTS=(-i ssh_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 
 set +e  # ssh will be failing on purpose
+# Loop forever attempting to run qemu, but give every try a finite wait time
+attempt=1
 while true; do
-	log "$GREEN" "Waiting for VM.. try 'nc localhost 4321' to see what's going on if this is taking too long."
-	output=$(ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" -o ConnectTimeout=1 root@localhost whoami)
-	[[ "$output" == "root" ]] && break
-	sleep 10s
+	retry=1
+	log "$GREEN" "Booting $arch $MACHINE with $EFI from $img"
+	set -x
+	"qemu-system-$arch"  \
+  	-machine type="${MACHINE}" -m 1024 \
+  	-cpu ${CPU} -smp 4 \
+  	"${ACCEL[@]}" \
+  	-snapshot \
+  	-drive "if=pflash,format=raw,file=${EFI},readonly=on" \
+  	"${VARSTORE[@]}" \
+  	"${DRIVE[@]}" \
+  	-drive if=virtio,format=raw,file=seed.img \
+  	-netdev id=net00,type=user,hostfwd=tcp::"${SSH_PORT}"-:22 \
+  	-device virtio-net-pci,netdev=net00 \
+  	-monitor unix:qemu-monitor.socket,server,nowait \
+  	-serial "telnet:localhost:${TELNET_PORT},server,nowait" \
+  	-display none -daemonize -pidfile qemu.pid || exit 1
+set +x
+	while [[  "$retry" -le "${QEMU_PATIENCE_LIMIT?}" ]]; do
+		log "$GREEN" "Waiting for VM (attempt ${attempt?}, retry ${retry?}/${QEMU_PATIENCE_LIMIT?}).. try 'nc localhost 4321' to see what's going on if this is taking too long."
+		output=$(ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" -o ConnectTimeout=1 root@localhost whoami)
+		# If login succeeded, break out of both loops
+		[[ "$output" == "root" ]] && break 2
+		sleep 10s
+		(( retry++ ))
+	done
+	log "$RED" "Giving up on VM booting (attempt: ${attempt?}), kill & retry ..."
+  [[ -f qemu.pid ]] && kill "$(cat qemu.pid)" ; ( rm qemu.pid 2>/dev/null )
+	(( attempt++ ))
 done
 set -e
 
@@ -125,8 +135,8 @@ ssh "${SSH_OPTS[@]}" -p "$SSH_PORT" root@localhost \
 	IDM_PORT="$IDM_PORT" \
 	IDM_USER="$IDM_USER" \
 	SSH_PUBLICKEY="\"$SSH_PUBLICKEY\"" \
-	PRETEND_TARGET="\"$PRETEND_TARGET\"" \
-	KANIDM_UPGRADE="\"$KANIDM_UPGRADE\"" \
+	PRETEND_TARGET="$PRETEND_TARGET" \
+	KANIDM_UPGRADE="$KANIDM_UPGRADE" \
 	./test_payload.sh
 set +x
 

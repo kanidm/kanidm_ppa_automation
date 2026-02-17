@@ -7,6 +7,7 @@ export SSH_PORT="${SSH_PORT:-2222}"
 export IDM_URI="${IDM_URI?}" # No reasonable default!
 export IDM_GROUP="${IDM_GROUP:-posix_login}"
 export TELNET_PORT="${TELNET_PORT:-4321}"
+export QEMU_PATIENCE_LIMIT="${QEMU_PATIENCE_LIMIT:-10}" # Number of retries we try before kill & retry
 export MIRROR_PORT="${MIRROR_PORT:-31625}"
 export CATEGORY="${CATEGORY:-stable}"
 export USE_LIVE="${USE_LIVE:-false}"
