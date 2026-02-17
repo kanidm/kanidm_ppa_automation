@@ -111,3 +111,11 @@ All ports are bound only on localhost, so should normally not interfere with oth
 - `SSH_PORT` - 2222 - Port for the VM SSHD to listen on.
 - `TELNET_PORT` - 4321 - Port for the VM console to listen on.
 - `IDM_PORT` - 58915 - Port for the VM internal kanidmd. Only relevant if `IDM_URI=local`.
+
+#### Internal-ish options
+
+- `SERIAL_CONFIG` - Defaults to a telnet socket on $TELNET_PORT, but can be
+  overriden to anything Qemu supports for the `-serial` flag.
+- `PRETEND_TARGET` - Allows partially overriding target logic to run mixed configs,
+  say installing trixie packages on top of sid.
+- `SUCCESS_WAIT` - Defaults to true, flip to false to exit target without confirmation.
