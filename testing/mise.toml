@@ -75,14 +75,14 @@ run = "scripts/run-all.sh"
 [tasks."testcase:oldstable:ext".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
-KANIDM_VERSION = "1.7"
+KANIDM_VERSION = "1.8"
 
 [tasks."testcase:oldstable:self"]
 run = "scripts/run-all.sh"
 [tasks."testcase:oldstable:self".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
-KANIDM_VERSION = "1.7"
+KANIDM_VERSION = "1.8"
 IDM_URI = "local"
 
 [tasks."testcase:oldstable-upgrade:ext"]
@@ -90,7 +90,7 @@ run = "scripts/run-all.sh"
 [tasks."testcase:oldstable-upgrade:ext".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
-KANIDM_VERSION = "1.7"
+KANIDM_VERSION = "1.8"
 KANIDM_UPGRADE = "true"
 
 [tasks."testcase:oldstable-upgrade:self"]
@@ -98,6 +98,6 @@ run = "scripts/run-all.sh"
 [tasks."testcase:oldstable-upgrade:self".env]
 SUCCESS_WAIT = "false"
 CATEGORY = "stable"
-KANIDM_VERSION = "1.7"
+KANIDM_VERSION = "1.8"
 KANIDM_UPGRADE = "true"
 IDM_URI = "local"
