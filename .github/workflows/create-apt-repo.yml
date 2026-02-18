@@ -20,9 +20,9 @@ jobs:
         category:
           # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
           - name: stable
-            ref: v1.7.4
-          - name: stable
             ref: v1.8.6
+          - name: stable
+            ref: v1.9.0
           - name: nightly
             ref: master
         os:

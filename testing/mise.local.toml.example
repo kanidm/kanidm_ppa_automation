@@ -5,3 +5,6 @@
 IDM_URI = "https://idm.example.com"
 SSH_PUBLICKEY = "ssh-ed25519 AAAAfoobarbaz you@localhost"
 #IDM_GROUP = "posix_login"
+
+# Secret lifehack if you want to be fancy:
+#SSH_PUBLICKEY = "{{ exec(command='ssh-add -L', cache_key='kani-ssh-key', cache_duration='1h') }}"

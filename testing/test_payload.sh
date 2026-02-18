@@ -85,6 +85,7 @@ test_uri="$IDM_URI"
 log "$GREEN" "Testing network connectivity to ${test_uri} ..."
 curl --retry 10 --retry-all-errors --no-progress-meter "$test_uri" > /dev/null || debug
 
+log "$GREEN" "Configuring system to skip various steps that slow down testing ..."
 # Make apt shut up about various things to see relevant output better
 export DEBIAN_FRONTEND=noninteractive
 export LC_CTYPE=C.UTF-8
@@ -96,6 +97,18 @@ Dpkg::Options {
   "--force-confold";
 }
 EOF
+
+# Also speed up installs by ignoring docs and their triggers
+echo 'set man-db/auto-update false'| debconf-communicate
+rm /var/lib/man-db/auto-update
+
+mkdir -p /etc/dpkg/dpkg.conf.d
+cat <<EOF >> /etc/dpkg/dpkg.conf.d/01_nodoc
+path-exclude=/usr/share/locale/*
+path-exclude=/usr/share/man/*
+path-exclude=/usr/share/doc/*
+EOF
+
 # Make various testing steps quieter
 [[ -f /etc/motd ]] && rm /etc/motd # Debian
 [[ -d /etc/update-motd.d/ ]] && rm -r /etc/update-motd.d/ # Ubuntu
