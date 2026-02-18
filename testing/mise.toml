@@ -92,3 +92,58 @@ extends = "testcase"
 env = { CATEGORY = "stable", IDM_URI = "local", KANIDM_VERSION = "{{env.OLDSTABLE_VERSION}}" }
 
 # Test cases end
+
+# A somewhat opinionated way of bulk running test_all that's proven reliable.
+[tasks.test_loop]
+description = "Run test_now in a loop, moving to the next case on success"
+run = '''
+#!/bin/zsh
+function prog(){ while true; do echo -n .; sleep 1; done | pv -s "$1" -S -F "%t %p" > /dev/null }
+
+while [[ $? -eq 0 ]]; do
+  mise run test_now && ( kill $(pgrep -f "./test_payload.sh") ; prog 120 ) || prog 60
+done
+'''
+
+# Generate fancy tables into your PRs. :-)
+[tasks.mktable]
+description = "Create a table to record test results, --checked to pre-check"
+quiet = true
+usage = 'flag "--checked" help="Whether to pre-check all boxes"'
+tools."github:keyneston/mktable" = "v0.0.5"
+run = '''
+  echo "### Test results\n"
+  stable_targets="$(grep -E 'targets[\+]{0,1}=\(' scripts/run-all.sh \
+    | grep -v @ \
+  | cut -d \( -f 2 | tr -d \) \
+  | xargs)"
+
+  nightly_targets="$(grep -E 'targets=\(' scripts/run-all.sh \
+    | grep -v @ \
+  | cut -d \( -f 2 | tr -d \) \
+  | xargs)"
+
+  cat << EOT
+- Tests flagged as \`ext\` are against an external container run current stable kanidmd.
+- Tests flagged as \`self\` are against an internal PPA installed kanidmd of the same version.
+- Distro targets for \`stable\`: \`${stable_targets}\`
+- Distro targets for \`nightly\`: \`${nightly_targets}\`
+
+EOT
+
+  if [ "$usage_checked" != "true" ]; then
+    check=" "
+  else
+    check="x"
+  fi
+
+  (
+    echo "TEST_ID\tx86_64\taarch64"; \
+    mise run -n test_all 2>&1 \
+      | grep -v Finished \
+      | tr -d \[\] \
+      | awk \
+        -v check="$check" \
+        '{ print $1"\t<ul><li> [" check "] </li></ul>\t<ul><li> [" check "] </li></ul>" }'
+  ) | mktable
+'''

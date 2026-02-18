@@ -33,11 +33,13 @@ to multitasking is around 40 minutes.
    They are explained better further down,
 1. Launch the full test run: `mise run test_all` (Use `mise run` to see available modules.)
 1. Wait for the test payload to finish setup, once it's tailing Kanidm debug logs it's ready.
-1. In another terminal, launch the test sript: `mise run test_now && kill $(pgrep -f StrictHostKeyChecking)`
+1. In another terminal, launch the test sript:
+   - For example: `mise run test_now && kill $(pgrep -f StrictHostKeyChecking)`
+   - Or for an opinionated fully automatic test loop: `mise run test_loop`
 1. Either debug what went wrong with `mise run debug`,
-   or if all was fine the permutation was already killed by the example
-   above and the next one is launching, repeat the process.
-1. You can retry individual failing combinations as well: `TEST_TARGETS=trixie mise run test:stable:ext`
+   or if all was fine the permutation was already killed by the examples
+   above and the next one is launching ready for a repeat.
+1. You can retry individual failing combinations as well: `TEST_TARGETS=trixie mise run testcase:1e:stable:ext`
 
 ### Running arbitrary tests the hard way without Mise
 
