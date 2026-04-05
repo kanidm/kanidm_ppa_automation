@@ -29,7 +29,7 @@ run = '''
   ssh -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
       -o LogLevel=ERROR \
-      localhost -p 2222
+      localhost -p ${SSH_PORT:-2222}
   '''
 
 [tasks.test_now]
@@ -40,7 +40,7 @@ run = '''
       -o LogLevel=ERROR \
       -o PasswordAuthentication=no \
       -o BatchMode=yes \
-      localhost -p 2222 \
+      localhost -p ${SSH_PORT:-2222} \
     "source /etc/test_env && \
     source /etc/os-release && \
     echo \"TEST_ID=\${TEST_ID}\" && \
@@ -55,7 +55,7 @@ description = "Connect to a running test as root bypassing Kanidm auth"
 run = '''
   ssh -o StrictHostKeyChecking=no \
       -o UserKnownHostsFile=/dev/null \
-      root@localhost -p 2222 -i ssh_ed25519
+      root@localhost -p ${SSH_PORT:-2222} -i ssh_ed25519
 '''
 
 # Test cases begin
