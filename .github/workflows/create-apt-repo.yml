@@ -38,10 +38,13 @@ jobs:
             support: old-LTS # 2027, April
           - name: noble
             image: ubuntu:24.04
-            support: LTS # 2029, April
+            support: old-LTS # 2029, May
           - name: questing
             image: ubuntu:25.10
             support: interim # 2026, July
+          - name: resolute
+            image: ubuntu:26.04
+            support: LTS # 2031, May
         target:
           # Runner postfixes add to "ubuntu-24.04"
           - name: x86_64-unknown-linux-gnu
@@ -157,8 +160,9 @@ jobs:
             jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
             questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
+            resolute,stable,\"amd64,arm64\",false,debs/stable-*-resolute-*-unknown-linux-gnu/*.deb
             trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
-            noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb
+            resolute,nightly,\"amd64,arm64\",false,debs/nightly-master-resolute-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"

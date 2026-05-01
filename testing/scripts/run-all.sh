@@ -95,11 +95,11 @@ if [[ -n "$TEST_TARGETS" ]]; then
   IFS=" " read -r -a targets <<<"$TEST_TARGETS"
 else
   # Base set of targets: Latest LTS releases
-  targets=(trixie noble)
+  targets=(trixie resolute)
   # Additional targets won't work for nightly
   if [[ "$CATEGORY" != "nightly" ]]; then
     # Previous still supported LTS
-    targets+=(bookworm jammy)
+    targets+=(bookworm noble jammy)
     # Interim releases
     targets+=(questing)
   fi
