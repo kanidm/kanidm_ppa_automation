@@ -19,11 +19,10 @@ jobs:
       matrix:
         category:
           # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
-          # 1.8.x yanked as vulnerable, see: https://github.com/kanidm/kanidm/issues/4303
-          # - name: stable
-          #   ref: v1.8.6
           - name: stable
             ref: v1.9.3
+          - name: stable
+            ref: v1.10.0
           - name: nightly
             ref: master
         os:
