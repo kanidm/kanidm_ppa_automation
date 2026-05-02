@@ -1,0 +1,8 @@
+name: "github action updates"
+
+autodiscovery:
+  crawlers:
+    github/action:
+      spec:
+        digest: true
+        rootdir: ".github"
