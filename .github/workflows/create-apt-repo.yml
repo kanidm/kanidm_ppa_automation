@@ -62,7 +62,7 @@ jobs:
       # and if we checkout before having git, it's done through the REST API and missing .git
       - name: Get git
         shell: bash
-        run: apt update && apt install -y git
+        run: apt-get update && apt-get install -y git
       # Step 0. Pick up the stable or nightly source
       - name: Checkout Kanidm
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -86,9 +86,19 @@ jobs:
           echo "RUST_VERSION=$(awk -F \" '/^rust-version/ {print $2}' Cargo.toml)" >> $GITHUB_ENV
       # We need to grab Rust manually since we're on vanilla images, not GHA runners
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@4a76a4951e2b37e999824e644cd130c67037ee2b # 1.100
-        with:
-          toolchain: $RUST_VERSION
+        shell: bash
+        # While rustlang does not have an official action (they are working on one) we unfortunately need to rely
+        # on rustup.rs, which all the unofficial ones rely on anyway under the hood.
+        # Due to this they are also under a constant effective DDoS so generous and patient retrying is better than
+        # failing the entire shard. The curl retry logic starts with a 1s delay and doubles it up every iteration up to a
+        # max of 10 minutes per retry, so the total possible runtime here is ~27 minutes, or roughly doubling the total
+        # runtime from an ideal scenario.
+        # We also need to retry all errors as transient as the GHA environment causes some temporary issues to look
+        # like permanents and even a --retry-connrefused isn't enough to catch all of them.
+        run: |
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-all-errors -fsSL \
+            "https://sh.rustup.rs" | sh -s -- --default-toolchain $RUST_VERSION -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Setup mold
         uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
         with:
