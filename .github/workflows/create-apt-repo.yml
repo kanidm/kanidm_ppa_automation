@@ -103,16 +103,6 @@ jobs:
         uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
         with:
           mold-version: 2.41.0
-      - name: Configure sccache
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            core.exportVariable('ACTIONS_RESULTS_URL', process.env.ACTIONS_RESULTS_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@9e7fa8a12102821edf02ca5dbea1acd0f89a2696 # v0.0.10
-        with:
-          version: "v0.15.0"
       # Step 1. Build
       - name: Build packages (bins & libs)
         shell: bash
@@ -121,8 +111,6 @@ jobs:
             "${{ matrix.target.name }}"
         env:
           VERBOSE: true
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
           RUSTFLAGS: "-Clinker=clang -Clink-arg=-fuse-ld=/usr/local/bin/mold"
       # Step 1.5. Strip binaries
       # This significantly helps with storage limits.
