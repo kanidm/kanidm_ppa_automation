@@ -20,7 +20,7 @@ jobs:
           - name: stable
             ref: v1.9.3
           - name: stable
-            ref: v1.10.0
+            ref: v1.10.1
           - name: nightly
             ref: master
         os:
