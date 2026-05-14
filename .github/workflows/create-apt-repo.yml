@@ -1,13 +1,11 @@
 ---
 name: "Create apt repo"
-
 "on": # TODO: This needs to also become a cron for the nightly function to make sense
   push:
     branches:
       - main
   pull_request:
   workflow_dispatch:
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -19,11 +17,10 @@ jobs:
       matrix:
         category:
           # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
-          # 1.8.x yanked as vulnerable, see: https://github.com/kanidm/kanidm/issues/4303
-          # - name: stable
-          #   ref: v1.8.6
           - name: stable
-            ref: v1.9.3
+            ref: v1.9.4
+          - name: stable
+            ref: v1.10.2
           - name: nightly
             ref: master
         os:
@@ -39,10 +36,13 @@ jobs:
             support: old-LTS # 2027, April
           - name: noble
             image: ubuntu:24.04
-            support: LTS # 2029, April
+            support: old-LTS # 2029, May
           - name: questing
             image: ubuntu:25.10
             support: interim # 2026, July
+          - name: resolute
+            image: ubuntu:26.04
+            support: LTS # 2031, May
         target:
           # Runner postfixes add to "ubuntu-24.04"
           - name: x86_64-unknown-linux-gnu
@@ -50,29 +50,29 @@ jobs:
           - name: aarch64-unknown-linux-gnu
             runner-postfix: "-arm"
         exclude: # Nightlies are only for latest LTS versions, exclude old-LTS & interim
-          - category: { name: nightly }
-            os: { support: old-LTS }
-          - category: { name: nightly }
-            os: { support: interim }
-
+          - category: {name: nightly}
+            os: {support: old-LTS}
+          - category: {name: nightly}
+            os: {support: interim}
     runs-on: "ubuntu-24.04${{ matrix.target.runner-postfix }}"
-    container: "${{ matrix.os.image }}"
+    container:
+      image: "${{ matrix.os.image }}"
     steps:
       # Needed because we're not running directly on the runner,
       # and if we checkout before having git, it's done through the REST API and missing .git
       - name: Get git
         shell: bash
-        run: apt update && apt install -y git
+        run: apt-get update && apt-get install -y git
       # Step 0. Pick up the stable or nightly source
       - name: Checkout Kanidm
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: "kanidm/kanidm"
           ref: "${{ matrix.category.ref }}"
           submodules: false
       # Overlay the latest packaging tools instead of using the submodule reference which is intended for human use.
       - name: Checkout packaging tools
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: platform/debian/kanidm_ppa_automation
       # Step 0.5. Get a bunch of dependencies
@@ -86,19 +86,23 @@ jobs:
           echo "RUST_VERSION=$(awk -F \" '/^rust-version/ {print $2}' Cargo.toml)" >> $GITHUB_ENV
       # We need to grab Rust manually since we're on vanilla images, not GHA runners
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: $RUST_VERSION
+        shell: bash
+        # While rustlang does not have an official action (they are working on one) we unfortunately need to rely
+        # on rustup.rs, which all the unofficial ones rely on anyway under the hood.
+        # Due to this they are also under a constant effective DDoS so generous and patient retrying is better than
+        # failing the entire shard. The curl retry logic starts with a 1s delay and doubles it up every iteration up to a
+        # max of 10 minutes per retry, so the total possible runtime here is ~27 minutes, or roughly doubling the total
+        # runtime from an ideal scenario.
+        # We also need to retry all errors as transient as the GHA environment causes some temporary issues to look
+        # like permanents and even a --retry-connrefused isn't enough to catch all of them.
+        run: |
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-all-errors -fsSL \
+            "https://sh.rustup.rs" | sh -s -- --default-toolchain $RUST_VERSION -y
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       - name: Setup mold
-        uses: rui314/setup-mold@v1
-      - name: Configure sccache
-        uses: actions/github-script@v7
+        uses: rui314/setup-mold@9c9c13bf4c3f1adef0cc596abc155580bcb04444
         with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.9
+          mold-version: 2.41.0
       # Step 1. Build
       - name: Build packages (bins & libs)
         shell: bash
@@ -107,8 +111,6 @@ jobs:
             "${{ matrix.target.name }}"
         env:
           VERBOSE: true
-          SCCACHE_GHA_ENABLED: "true"
-          RUSTC_WRAPPER: "sccache"
           RUSTFLAGS: "-Clinker=clang -Clink-arg=-fuse-ld=/usr/local/bin/mold"
       # Step 1.5. Strip binaries
       # This significantly helps with storage limits.
@@ -122,14 +124,12 @@ jobs:
       - name: Build packages (debs)
         run: |
           platform/debian/kanidm_ppa_automation/scripts/build_debs.sh "${{ matrix.target.name }}"
-
       - name: Upload debs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: "${{matrix.category.name}}-${{matrix.category.ref}}-${{ matrix.os.name }}-${{ matrix.target.name }}"
           path: |
             target/${{ matrix.target.name }}/debian/*.deb
-
   # Step 3. Create the APT repo from the debs
   create-repo:
     name: Create APT repo
@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download previously built debs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: debs
           merge-multiple: false # Preserve which debs are from which matrix item
@@ -145,7 +145,7 @@ jobs:
         run: |
           find $(pwd) -name '*.deb'
       - name: Create Aptly repo
-        uses: jinnatar/actions-aptly-repo@v2.0.2
+        uses: jinnatar/actions-aptly-repo@e88155fae696e037dc0d3fa3325d30fd7270e620 # v2.0.2
         with:
           name: kanidm_ppa
           repo_url: https://kanidm.github.io/kanidm_ppa
@@ -158,13 +158,13 @@ jobs:
             jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
             questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
+            resolute,stable,\"amd64,arm64\",false,debs/stable-*-resolute-*-unknown-linux-gnu/*.deb
             trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
-            noble,nightly,\"amd64,arm64\",false,debs/nightly-master-noble-*-unknown-linux-gnu/*.deb
+            resolute,nightly,\"amd64,arm64\",false,debs/nightly-master-resolute-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
           gpg_passphrase: "${{ secrets.PASSPHRASE }}"
-
   # Step 4. Publish the created repo if and only if it's a push to main.
   publish:
     name: Deploy to GitHub Pages
@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Download repo snapshot
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: kanidm_ppa_snapshot
           path: snapshot
@@ -182,7 +182,7 @@ jobs:
         run: |
           curl https://raw.githubusercontent.com/kanidm/kanidm/refs/heads/master/book/src/packaging/ppa_packages.md > snapshot/README.md
       - name: Import GPG key # So we can sign the repository commit
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@2dc316deee8e90f13e1a351ab510b4d5bc0c82cd # v7.0.0
         env:
           # GitHub is a real ass about checking whether secrets are available or not.
           private_key_check: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -192,7 +192,7 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           git_commit_gpgsign: true
       - name: Publish to PPA
-        uses: crazy-max/ghaction-github-pages@v4
+        uses: crazy-max/ghaction-github-pages@1d6ee9b181a81033a16bd707a1401afa978daab4 # v5.0.0
         if: github.ref == 'refs/heads/main'
         with:
           repo: kanidm/kanidm_ppa

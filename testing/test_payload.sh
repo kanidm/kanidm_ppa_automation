@@ -216,9 +216,6 @@ for service in kanidm-unixd kanidm-unixd-tasks; do
   mkdir -p "/etc/systemd/system/${service}.service.d"
   cat << EOF > "/etc/systemd/system/${service}.service.d/env.conf"
 [Service]
-# Needed for =< 1.5
-Environment="KANIDM_DEBUG=true"
-# Works for >= 1.6
 Environment="RUST_LOG=kanidm=debug"
 EOF
 done
@@ -265,14 +262,20 @@ log "$GREEN" "Configuring NSS"
 sed -E 's/(passwd|group): (.*)/\1: \2 kanidm/' -i /etc/nsswitch.conf
 
 log "$GREEN" "Configuring sshd"
-
-cat << EOT > /etc/ssh/sshd_config
+# Starting with 0.10.+ enable pre-shipped snippet
+if dpkg --compare-versions "$(kanidm-unix version | awk '{ print $2 }')" ge "1.10.0"; then
+  sed -i -E 's/^#(PubkeyAuthentication|UsePAM|AuthorizedKeysCommand|AuthorizedKeysCommandUser)/\1/' \
+    /etc/ssh/sshd_config.d/10-kanidm.conf || debug
+  echo 'LogLevel DEBUG1' >> /etc/ssh/sshd_config.d/00-debug.conf
+else
+  cat << EOT > /etc/ssh/sshd_config
 PubkeyAuthentication yes
 UsePAM yes
 AuthorizedKeysCommand /usr/sbin/kanidm_ssh_authorizedkeys %u
 AuthorizedKeysCommandUser nobody
 LogLevel DEBUG1
 EOT
+fi
 systemctl restart ssh.service || debug
 
 ## All done with setup, run tests
