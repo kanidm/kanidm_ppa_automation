@@ -77,3 +77,22 @@ To cut a new release after upstream does, perform the following steps:
      Check the lines starting with `targets=`. There are three sets
      to potentially modify, the base LTS set, old LTS set and the
      interim releases set.
+
+## Other maintenance tasks
+
+We rely on a handful of external "non-official" Github Actions for the release CI.
+They may occasionally require updates, but due to the general state of supply chain security
+we want to be deliberate about updates. To facilitate this the repo contains a still overly
+simple [updatecli](https://www.updatecli.io/) config which allows locally bumping versions
+and tying them to current latest release hashes. Any bumping should be accompanied by a cursory
+review of what's changed, but that may at times be quite hard due to the use of js minification.
+Do your best.
+
+Example dependency update invocation:
+```shell
+GITHUB_TOKEN="$(gh auth token)" updatecli pipeline apply
+```
+
+- The changes will be done in your currently checked out copy which allows local diffing & manual commit.
+- Ignore the warnings caused by the matrix sharding, ideally these would somehow be skipped or silenced
+since it's a false positive due to our use of vanilla images.
