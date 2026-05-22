@@ -10,6 +10,67 @@ This repo holds packaging automation that builds debs from `kanidm/kanidm` and f
 For instructions how to use this repo for manual builds, see the book at:
 <https://kanidm.github.io/kanidm/stable/packaging/debian_ubuntu_packaging.html>
 
+## Distribution support policy
+
+For the user facing (less detailed) guidance, see: <https://kanidm.github.io/kanidm_ppa/>.
+
+### Kanidm versions
+
+The intent is to always have available the latest `patch` releases of the two latest `minor`
+releases. In practice this means that if `1.10.3` is the latest release,
+we carry `1.10.3` & `1.9.4`, but not `1.8.6`. This is slightly more lenient than the upstream
+Kanidm support policy which defines a time-limit for the previous `minor` release. However,
+temporarily we may drop a known-vulnerable version from distribution if a patched version is
+not available due to the stricter support policy.
+
+To avoid surprises, stay with the latest Kanidm release. The old one is there to give you more
+runway to upgrade and an opportunity to downgrade if facing issues, not to stay on old releases.
+
+### Kanidm components
+
+We provide the following packages:
+
+- `kanidm`: The cli client.
+- `kanidm-unixd`: The unix integration daemon.
+- `libpam-kanidm`: Support library for integration of `kanidm-unixd` with PAM.
+- `libnss-kanidm`: Support library for integration of `kanidm-unixd` with NSS.
+- `kanidmd`: The main Kanidm server daemon.
+
+While `kanidmd` is provided as a package, it is recommended to instead use a container based deployment.
+For details see: <https://kanidm.github.io/kanidm/stable/preparing_for_your_deployment.html>
+
+### Distribution versions
+
+We package for Debian & Ubuntu. Packages for one or the other are likely to also be compatible with
+their derivatives but this is not supported or tested for.
+
+The overarching goal is to have enough coverage to support those who upgrade their
+OS "within a reasonable timeframe" while keeping our build matrix size stable and small enough
+so that release builds do not take more than an hour on average and that the built repo stays
+under the artifact size limits.
+
+For both the intent is to support their latest two stable releases, and one interim release if
+available. We do not align to distribution release or end of life dates, but whenever a new
+release of Kanidm is cut, the support matrix is updated to reflect this policy. We do not provide
+a crossover period where both the latest stable and previous oldest stable are available at the
+same time, as you always have an oldstable available. With interim releases you're already living
+dangerously and expected to move to the next rapidly. The new interim release may work with the
+cronological previous release, but there are no guarantees.
+
+#### Debian
+
+- `stable` & `oldstable` are supported.
+- We do not support `unstable`, `testing` or `lts`.
+- At time of writing this means `trixie` & `bookworm` are supported while `bullseye` is not.
+- For definitions, see: <https://www.debian.org/releases>
+
+#### Ubuntu
+
+- The two latest LTS releases, and the latest interim release are supported.
+- The Ubuntu release schedule always has three LTS releases supported, but we do not include the third.
+- At time of writing this means `resolute`, `noble` and `questing` are supported, while `jammy` is not.
+- For definitions, see: <https://releases.ubuntu.com/>
+
 ## Release process
 
 To cut a new release after upstream does, perform the following steps:
@@ -18,8 +79,8 @@ To cut a new release after upstream does, perform the following steps:
    - Update the matrix category map to bump versions, prefer a tag `ref`.
      If a new `minor` version has been released,
      remove the oldest one so only two are always present.
-   - Check the matrix os map for any distros where support
-     has ended or a new release should already be added.
+   - Check the matrix os map for any distros where a new stable or interim
+     may have been released and perform changes as per the distro support policy above.
      See [Modifying distro support](#modifying-distro-support)
      for necessary steps.
 
@@ -59,24 +120,23 @@ To cut a new release after upstream does, perform the following steps:
    - You still have a bit of time to quickly fix your mistake if something
      wasn't caught in testing.
    - Probably a good idea to be vocal about any late found issues in the
-
    Kanidm community channel, see: [Kanidm Community](https://kanidm.com/community/).
 
 ## Modifying distro support
 
 1. In `.github/workflows/create-apt-repo.yml`:
-   - Modify the matrix os map for any distros where support
-     has ended and drop them. Add any replacements and modify
-     the `support` type as needed.`
-   - Update the PPA csv data under the `Create Aptly repo` step.
+   - Modify the matrix os map for any new distro versions and subsequent drops. In
+     practice this means any of:
+     - Swap in a new `stable`, drop `oldstable` and demote previous `stable` to `oldstable`.
+     - Switch out an `interim` for the latest available interim release.
+   - Update the PPA csv data under the `Create Aptly repo` step to match.
 
 2. Update the testing harness:
    - Modify `testing/lib/targets.sh` to remove old distro cloud image
      references and add new ones.
    - Modify `testing/scripts/run-all.sh` to update the test sets.
      Check the lines starting with `targets=`. There are three sets
-     to potentially modify, the base LTS set, old LTS set and the
-     interim releases set.
+     to potentially modify for stable, oldstable & interim. Order matters.
 
 ## Other maintenance tasks
 
@@ -89,6 +149,7 @@ review of what's changed, but that may at times be quite hard due to the use of 
 Do your best.
 
 Example dependency update invocation:
+
 ```shell
 GITHUB_TOKEN="$(gh auth token)" updatecli pipeline apply
 ```

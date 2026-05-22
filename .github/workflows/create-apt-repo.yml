@@ -25,25 +25,25 @@ jobs:
           - name: stable
             ref: v1.10.3
         os:
-          # See comment for upstream support end-date after which we can drop it.
+          # We support stable, oldstable & latest interim releases.
+          # - For Debian this means stable & oldstable
+          # - For Ubuntu this means the 2 latest LTS releases and latest interim
+          # Distro release changeovers happen on the next Kanidm release.
           - name: trixie
             image: debian:13
-            support: LTS # 2030, June
+            support: stable
           - name: bookworm
             image: debian:12
-            support: old-LTS # 2028, June
-          - name: jammy
-            image: ubuntu:22.04
-            support: old-LTS # 2027, April
+            support: oldstable
           - name: noble
             image: ubuntu:24.04
-            support: old-LTS # 2029, May
-          - name: questing
+            support: oldstable
+          - name: questing # 'stonking' expected 2026-10.
             image: ubuntu:25.10
-            support: interim # 2026, July
+            support: interim
           - name: resolute
             image: ubuntu:26.04
-            support: LTS # 2031, May
+            support: stable
         target:
           # Runner postfixes add to "ubuntu-24.04"
           - name: x86_64-unknown-linux-gnu
@@ -151,7 +151,6 @@ jobs:
           repos: |
             trixie,stable,\"amd64,arm64\",false,debs/stable-*-trixie-*-unknown-linux-gnu/*.deb
             bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
-            jammy,stable,\"amd64,arm64\",false,debs/stable-*-jammy-*-unknown-linux-gnu/*.deb
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
             questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
             resolute,stable,\"amd64,arm64\",false,debs/stable-*-resolute-*-unknown-linux-gnu/*.deb
