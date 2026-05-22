@@ -96,13 +96,10 @@ if [[ -n "$TEST_TARGETS" ]]; then
 else
   # Base set of targets: Latest LTS releases
   targets=(trixie resolute)
-  # Additional targets won't work for nightly
-  if [[ "$CATEGORY" != "nightly" ]]; then
-    # Previous still supported LTS
-    targets+=(bookworm noble jammy)
-    # Interim releases
-    targets+=(questing)
-  fi
+  # Previous still supported LTS
+  targets+=(bookworm noble jammy)
+  # Interim releases
+  targets+=(questing)
 fi
 log "$GREEN" "Full set of test targets:${ENDCOLOR} ${targets[*]}"
 

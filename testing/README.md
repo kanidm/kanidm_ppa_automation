@@ -84,7 +84,7 @@ build from GHA, though less valuable for proving the PPA itself will be function
 
 #### Testing different things
 
-- `CATEGORY` - Which mirror category to install, `stable` (default) or `nightly`.
+- `CATEGORY` - Which mirror category to install, `stable` is the only currently supported option.
 - `KANIDM_VERSION` - Version prefix to install from the category. `1.4` would install the latest available 1.4, say 1.4.6. The default is latest.
 - `KANIDM_UPGRADE` - Set to `true` to test an upgrade within a `$CATEGORY` from `$KANIDM_VERSION` to
   the latest available.

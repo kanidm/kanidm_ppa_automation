@@ -76,13 +76,6 @@ env = { CATEGORY = "stable", KANIDM_VERSION = "{{env.OLDSTABLE_VERSION}}", KANID
 extends = "testcase"
 env = { CATEGORY = "stable", IDM_URI = "local", KANIDM_VERSION = "{{env.OLDSTABLE_VERSION}}", KANIDM_UPGRADE = "true" }
 
-[tasks."testcase:3e:nightly:ext"]
-extends = "testcase"
-env = { CATEGORY = "nightly" }
-
-[tasks."testcase:3s:nightly:self"]
-env = { CATEGORY = "nightly", IDM_URI = "local" }
-
 [tasks."testcase:4e:oldstable:ext"]
 extends = "testcase"
 env = { CATEGORY = "stable", KANIDM_VERSION = "{{env.OLDSTABLE_VERSION}}" }
@@ -118,16 +111,10 @@ run = '''
   | cut -d \( -f 2 | tr -d \) \
   | xargs)"
 
-  nightly_targets="$(grep -E 'targets=\(' scripts/run-all.sh \
-    | grep -v @ \
-  | cut -d \( -f 2 | tr -d \) \
-  | xargs)"
-
   cat << EOT
 - Tests flagged as \`ext\` are against an external container run current stable kanidmd.
 - Tests flagged as \`self\` are against an internal PPA installed kanidmd of the same version.
 - Distro targets for \`stable\`: \`${stable_targets}\`
-- Distro targets for \`nightly\`: \`${nightly_targets}\`
 
 EOT
 

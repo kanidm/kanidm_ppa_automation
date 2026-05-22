@@ -1,6 +1,6 @@
 ---
 name: "Create apt repo"
-"on": # TODO: This needs to also become a cron for the nightly function to make sense
+"on":
   push:
     branches:
       - main
@@ -13,16 +13,17 @@ jobs:
   build:
     name: Build debs
     strategy:
+      # Issues are usually intermittent.
+      # Letting most complete and manually retrying the one that failed is much faster.
       fail-fast: false
       matrix:
         category:
-          # While the repo is in "dirty hack" mode, we only publish the latest patch of every supported minor version.
+          # Due to the limitations of this way of building the PPA, only the latest versions
+          # are made available due to the lack of effective & reliable persistent storage.
           - name: stable
             ref: v1.9.4
           - name: stable
             ref: v1.10.3
-          - name: nightly
-            ref: master
         os:
           # See comment for upstream support end-date after which we can drop it.
           - name: trixie
@@ -49,11 +50,6 @@ jobs:
             runner-postfix: ""
           - name: aarch64-unknown-linux-gnu
             runner-postfix: "-arm"
-        exclude: # Nightlies are only for latest LTS versions, exclude old-LTS & interim
-          - category: {name: nightly}
-            os: {support: old-LTS}
-          - category: {name: nightly}
-            os: {support: interim}
     runs-on: "ubuntu-24.04${{ matrix.target.runner-postfix }}"
     container:
       image: "${{ matrix.os.image }}"
@@ -63,7 +59,7 @@ jobs:
       - name: Get git
         shell: bash
         run: apt-get update && apt-get install -y git
-      # Step 0. Pick up the stable or nightly source
+      # Step 0. Pick up the target ref
       - name: Checkout Kanidm
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -159,8 +155,6 @@ jobs:
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
             questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
             resolute,stable,\"amd64,arm64\",false,debs/stable-*-resolute-*-unknown-linux-gnu/*.deb
-            trixie,nightly,\"amd64,arm64\",false,debs/nightly-master-trixie-*-unknown-linux-gnu/*.deb
-            resolute,nightly,\"amd64,arm64\",false,debs/nightly-master-resolute-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
           gpg_private_key: "${{ secrets.GPG_PRIVATE_KEY }}"
