@@ -20,20 +20,22 @@ fi
 
 . /etc/os-release
 
+# Handle ABI migrations done with package name suffixes.
+# We can get rid of this once 1.9.x is no longer in the release and OpenSSL is gone.
 case "$ID" in
   debian)
-    ssl="libssl3"
-    ;;
-  ubuntu)
     case "$VERSION_ID" in
-      22.04)
+      12)
         ssl="libssl3"
         ;;
       *)
-        # Thanks Ubuntu, I hate it
         ssl="libssl3t64"
         ;;
     esac
+    ssl="libssl3"
+    ;;
+  ubuntu)
+    ssl="libssl3t64"
     ;;
 esac
 
