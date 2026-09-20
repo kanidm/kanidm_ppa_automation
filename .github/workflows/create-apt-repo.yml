@@ -23,7 +23,7 @@ jobs:
           - name: stable
             ref: v1.10.5
           - name: stable
-            ref: v1.11.1
+            ref: v1.11.2
         os:
           # We support stable, oldstable & latest interim releases.
           # - For Debian this means stable & oldstable
