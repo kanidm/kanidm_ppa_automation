@@ -32,14 +32,14 @@ jobs:
           - name: trixie
             image: debian:13
             support: stable
-          - name: bookworm
+          - name: bookworm # Removal expected ~2027.
             image: debian:12
             support: oldstable
           - name: noble
-            image: ubuntu:24.04
+            image: ubuntu:24.04 # Removal expected 2028-04.
             support: oldstable
-          - name: questing # 'stonking' expected 2026-10.
-            image: ubuntu:25.10
+          - name: stonking # Next interim expected 2027-04.
+            image: ubuntu:26.10
             support: interim
           - name: resolute
             image: ubuntu:26.04
