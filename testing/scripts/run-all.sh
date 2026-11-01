@@ -99,7 +99,7 @@ else
   # Also oldstable
   targets+=(bookworm noble)
   # Interim releases (only applies to Ubuntu)
-  targets+=(questing)
+  targets+=(stonking)
 fi
 log "$GREEN" "Full set of test targets:${ENDCOLOR} ${targets[*]}"
 

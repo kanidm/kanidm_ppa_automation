@@ -152,7 +152,7 @@ jobs:
             trixie,stable,\"amd64,arm64\",false,debs/stable-*-trixie-*-unknown-linux-gnu/*.deb
             bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
-            questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
+            stonking,stable,\"amd64,arm64\",false,debs/stable-*-stonking-*-unknown-linux-gnu/*.deb
             resolute,stable,\"amd64,arm64\",false,debs/stable-*-resolute-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.
