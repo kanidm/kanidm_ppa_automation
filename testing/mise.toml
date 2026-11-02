@@ -11,7 +11,7 @@ SSH_PUBLICKEY = { required = "copy mise.local.toml.example to mise.local.toml an
 OLDSTABLE_VERSION = '''{{ exec(
   cache_key='kanidm_oldstable_version',
   cache_duration='1d',
-  command="awk 'match($0, /ref: v*([0-9]+\.[0-9]+)/, a) {printf a[1];exit}' ../.github/workflows/create-apt-repo.yml")}}'''
+  command="awk 'match($0, /ref: v*([0-9]+\\.[0-9]+)/, a) {printf a[1];exit}' ../.github/workflows/create-apt-repo.yml")}}'''
 
 # This template sets the basis for all test cases, which extend their unique env on top
 [task_templates."testcase"]
