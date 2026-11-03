@@ -68,7 +68,7 @@ cronological previous release, but there are no guarantees.
 
 - The two latest LTS releases, and the latest interim release are supported.
 - The Ubuntu release schedule always has three LTS releases supported, but we do not include the third.
-- At time of writing this means `resolute`, `noble` and `questing` are supported, while `jammy` is not.
+- At time of writing this means `resolute`, `noble` and `stonking` are supported, while `jammy` is not.
 - For definitions, see: <https://releases.ubuntu.com/>
 
 ## Release process

@@ -21,29 +21,30 @@ jobs:
           # Due to the limitations of this way of building the PPA, only the latest versions
           # are made available due to the lack of effective & reliable persistent storage.
           - name: stable
-            ref: v1.10.5
-          - name: stable
             ref: v1.11.2
+          - name: stable
+            ref: v1.12.0
         os:
-          # We support stable, oldstable & latest interim releases.
-          # - For Debian this means stable & oldstable
-          # - For Ubuntu this means the 2 latest LTS releases and latest interim
-          # Distro release changeovers happen on the next Kanidm release.
+          # We support stable, oldstable & latest interim releases where available.
+          # - For Debian this means `stable` & `oldstable`
+          # - For Ubuntu this means the 2 latest `LTS` releases and latest `interim`.
+          # - Our support timeline _does not_ align with distro support timelines.
+          # - Distro release changeovers happen on the next Kanidm release after distro release.
+          - name: bookworm # Next stable switchover & drop expected ~2027 in favor of forky.
+            image: debian:12
+            support: oldstable
           - name: trixie
             image: debian:13
             support: stable
-          - name: bookworm
-            image: debian:12
-            support: oldstable
           - name: noble
-            image: ubuntu:24.04
+            image: ubuntu:24.04 # Next stable switchover & drop expected 2028-04, in favor of 28.04.
             support: oldstable
-          - name: questing # 'stonking' expected 2026-10.
-            image: ubuntu:25.10
-            support: interim
           - name: resolute
             image: ubuntu:26.04
             support: stable
+          - name: stonking # Next interim switchover expected 2027-04, in favor of 27.04.
+            image: ubuntu:26.10
+            support: interim
         target:
           # Runner postfixes add to "ubuntu-24.04"
           - name: x86_64-unknown-linux-gnu
@@ -152,7 +153,7 @@ jobs:
             trixie,stable,\"amd64,arm64\",false,debs/stable-*-trixie-*-unknown-linux-gnu/*.deb
             bookworm,stable,\"amd64,arm64\",false,debs/stable-*-bookworm-*-unknown-linux-gnu/*.deb
             noble,stable,\"amd64,arm64\",false,debs/stable-*-noble-*-unknown-linux-gnu/*.deb
-            questing,stable,\"amd64,arm64\",false,debs/stable-*-questing-*-unknown-linux-gnu/*.deb
+            stonking,stable,\"amd64,arm64\",false,debs/stable-*-stonking-*-unknown-linux-gnu/*.deb
             resolute,stable,\"amd64,arm64\",false,debs/stable-*-resolute-*-unknown-linux-gnu/*.deb
           # When GPG secrets are not available (say a PR), the repo WILL NOT be signed.
           # Provide your own key material in a fork to test with signed repo snapshots.

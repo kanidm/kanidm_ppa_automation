@@ -11,5 +11,5 @@ bookworm="https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generi
 
 # Ubuntu
 noble="https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-${OSARCH}.img"
-questing="https://cloud-images.ubuntu.com/questing/current/questing-server-cloudimg-${OSARCH}.img"
+stonking="https://cloud-images.ubuntu.com/stonking/current/stonking-server-cloudimg-${OSARCH}.img"
 resolute="https://cloud-images.ubuntu.com/resolute/current/resolute-server-cloudimg-${OSARCH}.img"
